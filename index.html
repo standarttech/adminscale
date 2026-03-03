@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdminScale Pro — Административная Шкала</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────── CSS VARIABLES ─────────────────────────── */
+:root {
+  --bg:#0b0d14; --bg2:#12141f; --bg3:#181b28; --bg4:#1e2130;
+  --gold:#c9a84c; --gold2:#e8c97a; --gold3:#f5e4a8;
+  --silver:#8a9bb5; --silver2:#b8c9de;
+  --red:#e74c3c; --red2:#ff6b6b;
+  --orange:#e67e22; --orange2:#f39c12;
+  --blue:#2980b9; --blue2:#5dade2;
+  --green:#27ae60; --green2:#58d68d;
+  --purple:#8e44ad; --purple2:#bb8fce;
+  --cyan:#17a589; --cyan2:#48c9b0;
+  --white:#eceaf5; --muted:#4a5568;
+  --border:rgba(201,168,76,.15); --border2:rgba(255,255,255,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:'Montserrat',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.03)}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:3px}
+
+/* ─────────────────────────── LAYOUT ─────────────────────────── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;min-width:260px;background:var(--bg2);border-right:1px solid var(--border2);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s}
+.main{margin-left:260px;flex:1;min-height:100vh}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}}
+
+/* ─────────────────────────── SIDEBAR ─────────────────────────── */
+.sb-head{padding:22px 20px 14px;border-bottom:1px solid var(--border2)}
+.sb-logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold2);letter-spacing:-.5px}
+.sb-logo span{color:var(--silver);font-weight:300;font-style:italic}
+.sb-tag{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;font-family:'JetBrains Mono',monospace}
+.sb-nav{padding:10px 8px;flex:1;overflow-y:auto}
+.sb-sec{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;font-family:'JetBrains Mono',monospace}
+.sb-btn{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:6px;background:none;border:none;color:var(--silver2);font-family:'Montserrat',sans-serif;font-size:13px;cursor:pointer;text-align:left;transition:all .15s}
+.sb-btn:hover{background:rgba(255,255,255,.05);color:var(--white)}
+.sb-btn.act{background:rgba(201,168,76,.12);color:var(--gold2)}
+.sb-btn .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sb-btn .badge{margin-left:auto;background:rgba(201,168,76,.2);color:var(--gold2);font-size:10px;padding:1px 6px;border-radius:10px;font-family:'JetBrains Mono',monospace}
+.scale-list{padding:2px 8px}
+.sl-item{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.sl-item:hover{background:rgba(255,255,255,.04)}
+.sl-item.act{background:rgba(201,168,76,.08);border-color:var(--border)}
+.sl-name{font-size:12px;color:var(--silver2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-item.act .sl-name{color:var(--gold2)}
+.sl-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px;border-radius:3px;opacity:0;transition:all .15s}
+.sl-item:hover .sl-del{opacity:1}
+.sl-del:hover{color:var(--red);background:rgba(231,76,60,.15)}
+.sb-foot{padding:12px 10px;border-top:1px solid var(--border2)}
+
+/* ─────────────────────────── TOPBAR ─────────────────────────── */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,13,20,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border2);padding:10px 28px;display:flex;align-items:center;gap:10px;min-height:52px}
+.tb-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;color:var(--white);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-acts{display:flex;gap:7px;align-items:center;flex-shrink:0}
+
+/* ─────────────────────────── BUTTONS ─────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:6px;border:none;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.15)}
+.btn:active{transform:none}
+.btn-gold{background:rgba(201,168,76,.15);color:var(--gold2);border:1px solid rgba(201,168,76,.3)}
+.btn-green{background:rgba(39,174,96,.15);color:var(--green2);border:1px solid rgba(39,174,96,.3)}
+.btn-red{background:rgba(231,76,60,.15);color:var(--red2);border:1px solid rgba(231,76,60,.3)}
+.btn-blue{background:rgba(41,128,185,.15);color:var(--blue2);border:1px solid rgba(41,128,185,.3)}
+.btn-purple{background:rgba(142,68,173,.15);color:var(--purple2);border:1px solid rgba(142,68,173,.3)}
+.btn-cyan{background:rgba(23,165,137,.15);color:var(--cyan2);border:1px solid rgba(23,165,137,.3)}
+.btn-ghost{background:rgba(255,255,255,.05);color:var(--silver2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:4px}
+.btn-xs{padding:3px 7px;font-size:10px;border-radius:3px}
+
+/* ─────────────────────────── CONTENT ─────────────────────────── */
+.page{padding:28px 32px;max-width:980px;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─────────────────────────── CARDS ─────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:22px;margin-bottom:14px;transition:border-color .2s}
+.card:hover{border-color:rgba(255,255,255,.09)}
+
+/* ─────────────────────────── LEVEL CARDS ─────────────────────────── */
+.lcard{background:var(--bg2);border:1px solid var(--border2);border-left:4px solid var(--muted);border-radius:7px;margin-bottom:12px;overflow:hidden}
+.lcard-hd{display:flex;align-items:center;gap:11px;padding:13px 17px;cursor:pointer;background:rgba(255,255,255,.015);user-select:none}
+.lcard-hd:hover{background:rgba(255,255,255,.03)}
+.lcard-ic{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+.lcard-meta{flex:1;min-width:0}
+.lcard-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px}
+.lcard-title{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.lcard-desc{font-size:11px;color:var(--muted);font-weight:300}
+.lcard-body{padding:0 17px 16px}
+.lcard-chev{color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0}
+.lcard-chev.open{transform:rotate(90deg)}
+.lc1{border-left-color:var(--gold2)}.lc2{border-left-color:var(--gold)}.lc3{border-left-color:var(--silver)}.lc4{border-left-color:var(--blue2)}.lc5{border-left-color:var(--purple2)}.lc6{border-left-color:var(--cyan2)}.lc7{border-left-color:var(--red)}.lc8{border-left-color:var(--silver2)}.lc9{border-left-color:var(--green2)}.lc10{border-left-color:var(--orange2)}
+
+/* ─────────────────────────── TEXTAREA ─────────────────────────── */
+.fta{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:5px;padding:9px 13px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:300;line-height:1.6;resize:vertical;min-height:68px;transition:border-color .2s;outline:none}
+.fta:focus{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.04)}
+.fta::placeholder{color:var(--muted)}
+.finp{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:5px;padding:7px 12px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
+.finp:focus{border-color:rgba(201,168,76,.4)}
+.finp::placeholder{color:var(--muted)}
+.flabel{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+
+/* ─────────────────────────── PROGRAM BLOCKS ─────────────────────────── */
+.prog-block{background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.2);border-radius:8px;margin-bottom:18px;overflow:hidden}
+.prog-hd{display:flex;align-items:center;gap:11px;padding:13px 17px;background:rgba(139,92,246,.07);border-bottom:1px solid rgba(139,92,246,.15)}
+.prog-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--purple2);background:rgba(139,92,246,.15);padding:3px 8px;border-radius:10px;letter-spacing:1px;flex-shrink:0}
+.prog-ni{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(139,92,246,.25);border-radius:4px;padding:6px 12px;color:var(--purple2);font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;outline:none}
+.prog-ni:focus{border-color:var(--purple2)}
+.prog-body{padding:15px 17px}
+.main-task-box{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:6px;padding:13px;margin-bottom:14px}
+.mt-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-family:'JetBrains Mono',monospace;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.mt-inp{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:4px;padding:7px 11px;color:var(--gold3);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;outline:none}
+.mt-inp:focus{border-color:var(--gold)}
+
+/* ─────────────────────────── STEP BLOCKS ─────────────────────────── */
+/* Правильная терминология: ШАГ программы = ЗАДАЧА */
+.step-block{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;margin-bottom:9px;overflow:hidden}
+.step-hd{display:flex;align-items:center;gap:9px;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border2)}
+.step-num-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--blue2);background:rgba(41,128,185,.15);padding:2px 7px;border-radius:8px;flex-shrink:0}
+.step-type-badge{font-size:10px;padding:2px 8px;border-radius:8px;flex-shrink:0;font-weight:500;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+.step-name-inp{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(93,173,226,.25);border-radius:4px;padding:5px 9px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:13px;outline:none}
+.step-name-inp:focus{border-color:var(--blue2)}
+.step-meta-row{display:flex;gap:8px;padding:7px 14px;background:rgba(255,255,255,.01);border-bottom:1px solid var(--border2);flex-wrap:wrap;align-items:center}
+.step-meta-row label{font-size:10px;color:var(--muted);flex-shrink:0}
+.mini-inp{background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:3px;padding:3px 7px;color:var(--silver2);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none}
+.mini-inp:focus{border-color:var(--blue2)}
+.step-body{padding:12px 14px}
+
+/* Step type colors */
+.stype-primary .step-type-badge{background:rgba(231,76,60,.2);color:var(--red2)}
+.stype-vital .step-type-badge{background:rgba(230,126,34,.2);color:var(--orange2)}
+.stype-conditional .step-type-badge{background:rgba(41,128,185,.2);color:var(--blue2)}
+.stype-operating .step-type-badge{background:rgba(39,174,96,.2);color:var(--green2)}
+.stype-production .step-type-badge{background:rgba(142,68,173,.2);color:var(--purple2)}
+.stype-primary{border-left:3px solid var(--red2)}
+.stype-vital{border-left:3px solid var(--orange2)}
+.stype-conditional{border-left:3px solid var(--blue2)}
+.stype-operating{border-left:3px solid var(--green2)}
+.stype-production{border-left:3px solid var(--purple2)}
+
+/* ─────────────────────────── PROJECT BLOCK ─────────────────────────── */
+.proj-block{background:rgba(23,165,137,.05);border:1px solid rgba(23,165,137,.2);border-radius:6px;padding:13px;margin-top:10px}
+.proj-title-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.proj-badge{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--cyan2);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:6px}
+.proj-name-inp{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(23,165,137,.25);border-radius:4px;padding:5px 9px;color:var(--cyan2);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;outline:none;min-width:150px}
+.proj-name-inp:focus{border-color:var(--cyan2)}
+.proj-step{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.05)}
+.proj-step:last-child{border-bottom:none}
+.proj-step-n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;padding-top:3px;width:20px}
+.proj-step-inp{flex:1;background:none;border:none;outline:none;color:var(--silver2);font-size:12px;font-weight:300;font-family:'Montserrat',sans-serif;line-height:1.4}
+.proj-step-resp{background:none;border:none;outline:none;color:var(--muted);font-size:11px;font-family:'Montserrat',sans-serif;width:100px}
+.proj-step-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;flex-shrink:0}
+.proj-step-del:hover{color:var(--red)}
+
+/* ─────────────────────────── INLINE TASK NOTE ─────────────────────────── */
+.step-note{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:4px;padding:7px 10px;color:var(--silver2);font-family:'Montserrat',sans-serif;font-size:12px;resize:vertical;min-height:52px;outline:none;transition:border-color .2s}
+.step-note:focus{border-color:rgba(255,255,255,.2)}
+
+/* ─────────────────────────── COMPLETION CHECKBOX ─────────────────────────── */
+.check-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.chk{width:16px;height:16px;cursor:pointer;accent-color:var(--green);flex-shrink:0}
+.chk-label{font-size:12px;color:var(--silver)}
+
+/* ─────────────────────────── PROGRESS ─────────────────────────── */
+.prog-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green2));border-radius:2px;transition:width .3s}
+.prog-txt{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px}
+
+/* ─────────────────────────── ALERTS ─────────────────────────── */
+.alert{padding:9px 13px;border-radius:5px;font-size:11px;margin-bottom:10px;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
+.alert-warn{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);color:#fca5a5}
+.alert-info{background:rgba(41,128,185,.08);border:1px solid rgba(41,128,185,.2);color:#93c5fd}
+.alert-gold{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);color:var(--gold3)}
+.alert-cyan{background:rgba(23,165,137,.08);border:1px solid rgba(23,165,137,.2);color:var(--cyan2)}
+
+/* ─────────────────────────── SEC HEADER ─────────────────────────── */
+.sec-hd{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.sec-n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:2px;white-space:nowrap}
+.sec-t{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;letter-spacing:-.3px}
+.sec-line{flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent);opacity:.3}
+
+/* ─────────────────────────── DASHBOARD CARDS ─────────────────────────── */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:28px}
+.dc{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:22px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.dc:hover{transform:translateY(-3px);border-color:rgba(201,168,76,.3)}
+.dc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.dc-gold::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.dc-orange::before{background:linear-gradient(90deg,var(--orange),var(--orange2))}
+.dc-blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
+.dc-purple::before{background:linear-gradient(90deg,var(--purple),var(--purple2))}
+.dc-green::before{background:linear-gradient(90deg,var(--green),var(--green2))}
+.dc-ic{font-size:34px;margin-bottom:10px}
+.dc-t{font-size:15px;font-weight:700;margin-bottom:5px}
+.dc-d{font-size:12px;color:var(--silver);font-weight:300;line-height:1.6}
+
+/* ─────────────────────────── REFERENCE DRAWER ─────────────────────────── */
+.ref-panel{position:fixed;right:0;top:0;bottom:0;width:400px;background:var(--bg2);border-left:1px solid var(--border2);z-index:200;overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.ref-panel.open{transform:translateX(0)}
+.ref-ph{padding:18px 22px 14px;border-bottom:1px solid var(--border2);background:var(--bg3);position:sticky;top:0;display:flex;align-items:center;gap:11px}
+.ref-pt{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold2);flex:1}
+.ref-close{background:none;border:none;color:var(--silver);cursor:pointer;font-size:18px;padding:3px}
+.ref-close:hover{color:var(--white)}
+.ref-body{padding:18px 22px}
+.ref-section{margin-bottom:26px}
+.ref-sec-t{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:11px;padding-bottom:5px;border-bottom:1px solid var(--border2)}
+.ref-item{padding:9px 13px;border-radius:5px;background:rgba(255,255,255,.025);border-left:3px solid;margin-bottom:7px}
+.ref-it{font-size:12px;font-weight:600;margin-bottom:2px}
+.ref-id{font-size:11px;color:var(--silver);font-weight:300;line-height:1.6}
+.ref-ie{font-size:10px;color:var(--muted);font-style:italic;margin-top:5px;padding:4px 7px;background:rgba(255,255,255,.04);border-radius:3px;line-height:1.5}
+.ref-warn{padding:9px 13px;border-radius:5px;background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);font-size:11px;color:#fca5a5;line-height:1.6;margin-bottom:10px}
+
+/* ─────────────────────────── MODAL ─────────────────────────── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:26px;width:100%;max-width:520px;animation:fadeUp .2s ease}
+.modal-t{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--gold2);margin-bottom:14px}
+.modal-ft{display:flex;gap:9px;margin-top:18px;justify-content:flex-end}
+
+/* ─────────────────────────── TABS ─────────────────────────── */
+.tabs{display:flex;gap:3px;margin-bottom:18px;border-bottom:1px solid var(--border2)}
+.tab{padding:7px 14px;background:none;border:none;color:var(--muted);font-family:'Montserrat',sans-serif;font-size:12px;cursor:pointer;position:relative;transition:color .15s}
+.tab::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--gold);transform:scaleX(0);transition:transform .2s}
+.tab:hover{color:var(--silver2)}
+.tab.act{color:var(--gold2)}
+.tab.act::after{transform:scaleX(1)}
+
+/* ─────────────────────────── EMPTY ─────────────────────────── */
+.empty{text-align:center;padding:50px 20px}
+.empty-ic{font-size:50px;margin-bottom:14px;opacity:.35}
+.empty-t{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--silver);margin-bottom:6px}
+.empty-d{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:22px}
+
+/* ─────────────────────────── REVIEW TABLE ─────────────────────────── */
+.rtable{width:100%;border-collapse:collapse;margin-bottom:14px}
+.rtable th,.rtable td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--border2);font-size:12px}
+.rtable th{background:var(--bg3);color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.rtable tr:hover td{background:rgba(255,255,255,.015)}
+
+/* ─────────────────────────── SELECT TYPE ─────────────────────────── */
+.type-sel{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:4px;padding:6px 10px;color:var(--silver2);font-family:'Montserrat',sans-serif;font-size:12px;outline:none;cursor:pointer}
+.type-sel:focus{border-color:rgba(201,168,76,.4)}
+option{background:var(--bg3);color:var(--white)}
+
+/* ─────────────────────────── TOAST ─────────────────────────── */
+.toast{position:fixed;bottom:22px;right:22px;z-index:9000;padding:9px 17px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--white);animation:fadeUp .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+
+/* ─────────────────────────── PRINT ─────────────────────────── */
+@media print{
+  body{background:white!important;color:black!important}
+  .sidebar,.topbar,.ref-panel,.btn,.sl-del,.sb-foot,.no-print{display:none!important}
+  .main{margin-left:0}
+  .lcard,.prog-block,.step-block{border:1px solid #ddd!important;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo">Admin<span>Scale</span> Pro</div>
+    <div class="sb-tag">Административная шкала</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Навигация</div>
+    <button class="sb-btn act" id="nb-dash" onclick="gotoView('dash')"><span class="ic">🏠</span>Главная</button>
+    <button class="sb-btn" id="nb-editor" onclick="gotoView('editor')"><span class="ic">📋</span>Редактор</button>
+    <button class="sb-btn" id="nb-review" onclick="gotoView('review')"><span class="ic">👁</span>Обзор</button>
+    <div class="sb-sec" style="margin-top:6px">Мои шкалы</div>
+    <div class="scale-list" id="scale-list"></div>
+    <div class="sb-sec" style="margin-top:6px">Инструменты</div>
+    <button class="sb-btn" onclick="openRef()"><span class="ic">📚</span>Справочник</button>
+    <button class="sb-btn" onclick="openModal('modal-settings')"><span class="ic">⚙</span>Настройки и экспорт</button>
+    <button class="sb-btn" onclick="openModal('modal-supabase')" id="sb-connect-btn">
+      <span class="ic">☁</span>
+      <span>Supabase</span>
+      <span id="sb-dot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0"></span>
+    </button>
+  </nav>
+  <div class="sb-foot">
+    <div id="sb-status" style="font-size:10px;color:var(--muted);padding:0 4px 8px;font-family:'JetBrains Mono',monospace;line-height:1.4">☁ Supabase не настроен</div>
+    <button class="btn btn-gold" style="width:100%;justify-content:center" onclick="openNewModal()">＋ Новая шкала</button>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+  <div class="topbar">
+    <button class="btn btn-ghost" style="display:none;padding:7px 9px" id="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    <div class="tb-title" id="tb-title">AdminScale Pro</div>
+    <div class="tb-acts">
+      <button class="btn btn-ghost btn-sm" id="undo-btn" onclick="doUndo()" style="display:none" title="Отменить (Ctrl+Z)">↩</button>
+      <button class="btn btn-gold btn-sm no-print" onclick="openRef()">📚 Справочник</button>
+      <button class="btn btn-ghost btn-sm no-print" onclick="openModal('modal-settings')">⚙ Экспорт</button>
+      <button class="btn btn-green btn-sm no-print" onclick="doSave()">💾 Сохранить</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="v-dash">
+    <div class="sec-hd"><span class="sec-n">ДОБРО ПОЖАЛОВАТЬ</span><h2 class="sec-t">AdminScale Pro</h2><div class="sec-line"></div></div>
+    <div class="dash-grid">
+      <div class="dc dc-gold" onclick="openNewModal()">
+        <div class="dc-ic">✦</div>
+        <div class="dc-t">Новая шкала</div>
+        <div class="dc-d">Создайте административную шкалу — от Цели до ЦКП, с программами и задачами по всем правилам.</div>
+      </div>
+      <div class="dc dc-blue" onclick="openRef()">
+        <div class="dc-ic">📖</div>
+        <div class="dc-t">Справочник</div>
+        <div class="dc-d">Полное руководство: структура программ, 6 типов задач, правила проектов. Всё из первоисточника.</div>
+      </div>
+      <div class="dc dc-purple" onclick="loadTemplate('tours')">
+        <div class="dc-ic">🏢</div>
+        <div class="dc-t">Пример: Экскурсии</div>
+        <div class="dc-d">Загрузить готовую программу «Проведение экскурсий по компании» — реальный пример из ПДФ.</div>
+      </div>
+      <div class="dc dc-green" onclick="loadTemplate('wife')">
+        <div class="dc-ic">🌹</div>
+        <div class="dc-t">Пример: Вечер с женой</div>
+        <div class="dc-d">Классический пример из книги: кино, ресторан, прогулка — программа и проект в действии.</div>
+      </div>
+      <div class="dc dc-gold" onclick="loadTemplate('marketing')" style="border-top-color:var(--orange)">
+        <div class="dc-ic">📈</div>
+        <div class="dc-t">Пример: Маркетинговое агентство</div>
+        <div class="dc-d">Полная шкала агентства: увеличить клиентов на 50% через новые соцсети. Программа + проект + приказы.</div>
+      </div>
+      <div class="dc dc-purple" onclick="loadTemplate('tips')" style="grid-column:unset">
+        <div class="dc-ic">👥</div>
+        <div class="dc-t">Пример: ТИПы сотрудников</div>
+        <div class="dc-d">Программа по составлению технических индивидуальных программ для сотрудников.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold2);margin-bottom:14px">Правильная логика: Программа → Шаг (Задача) → Проект</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px">
+        <div style="padding:13px;background:rgba(255,255,255,.03);border-radius:6px;border-left:3px solid var(--gold2)">
+          <div style="font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:5px">📋 ПЛАН</div>
+          <div style="font-size:11px;color:var(--silver);line-height:1.6">Широкомасштабное намерение. Ещё не разбит на конкретные действия.</div>
+        </div>
+        <div style="padding:13px;background:rgba(255,255,255,.03);border-radius:6px;border-left:3px solid var(--purple2)">
+          <div style="font-size:11px;font-weight:700;color:var(--purple2);margin-bottom:5px">⚡ ПРОГРАММА</div>
+          <div style="font-size:11px;color:var(--silver);line-height:1.6">Упорядоченная последовательность <strong style="color:var(--blue2)">шагов</strong> для выполнения плана.</div>
+        </div>
+        <div style="padding:13px;background:rgba(255,255,255,.03);border-radius:6px;border-left:3px solid var(--blue2)">
+          <div style="font-size:11px;font-weight:700;color:var(--blue2);margin-bottom:5px">📌 ШАГ = ЗАДАЧА</div>
+          <div style="font-size:11px;color:var(--silver);line-height:1.6">Каждый шаг программы — это <strong>задача</strong>. Один тип + исполнитель + дедлайн.</div>
+        </div>
+        <div style="padding:13px;background:rgba(255,255,255,.03);border-radius:6px;border-left:3px solid var(--cyan2)">
+          <div style="font-size:11px;font-weight:700;color:var(--cyan2);margin-bottom:5px">🔧 ПРОЕКТ</div>
+          <div style="font-size:11px;color:var(--silver);line-height:1.6">Создаётся <strong>только</strong> когда один шаг оказался слишком сложным.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dash-scales"></div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="page" id="v-editor" style="display:none">
+    <div id="ed-empty" class="empty">
+      <div class="empty-ic">📋</div>
+      <div class="empty-t">Нет открытой шкалы</div>
+      <div class="empty-d">Создайте новую или выберите из боковой панели</div>
+      <button class="btn btn-gold" onclick="openNewModal()">✦ Создать шкалу</button>
+    </div>
+    <div id="ed-body" style="display:none"></div>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="page" id="v-review" style="display:none">
+    <div id="rev-body"></div>
+  </div>
+</div>
+</div>
+
+<!-- ════ REFERENCE PANEL ════ -->
+<div class="ref-panel" id="ref-panel">
+  <div class="ref-ph">
+    <div class="ref-pt">📚 Справочник</div>
+    <button class="ref-close" onclick="closeRef()">✕</button>
+  </div>
+  <div class="ref-body">
+
+    <div class="ref-section">
+      <div class="ref-sec-t">Ключевая концепция: шаги и задачи</div>
+      <div class="ref-warn"><strong>‼ Важно:</strong> Шаги программы и задачи — это одно и то же. Каждый шаг программы называется задачей. Нет отдельных «задач внутри шага» — сам шаг и есть задача определённого типа.</div>
+      <div class="ref-item" style="border-left-color:var(--gold2)">
+        <div class="ref-it" style="color:var(--gold2)">📋 Программа</div>
+        <div class="ref-id">Упорядоченная последовательность шагов (= задач) для выполнения плана. Шаги нумеруются: 1, 2, 3 или А, Б, В. Каждый шаг поручается конкретному человеку.</div>
+      </div>
+      <div class="ref-item" style="border-left-color:var(--blue2)">
+        <div class="ref-it" style="color:var(--blue2)">📌 Шаг программы = Задача</div>
+        <div class="ref-id">Конкретное действие. Каждому шагу присваивается тип (первоочередной, жизненно важный и т.д.), исполнитель и дедлайн. Подряд идущие шаги одного типа могут группироваться в раздел.</div>
+        <div class="ref-ie">Пример: «1. Прочитайте программу» — Первоочередная задача. «Условная: Если нет руководителя — назначьте его» — Условная задача.</div>
+      </div>
+      <div class="ref-item" style="border-left-color:var(--cyan2)">
+        <div class="ref-it" style="color:var(--cyan2)">🔧 Проект</div>
+        <div class="ref-id">Программа меньшего масштаба, создаётся ТОЛЬКО для выполнения одного конкретного шага, если тот оказался слишком объёмным. Позволяет не терять фокус на общей программе.</div>
+        <div class="ref-ie">«Вместо того чтобы зацикливаться на одном шаге — определяете Проект, намечаете шаги, выполняете их.»</div>
+      </div>
+    </div>
+
+    <div class="ref-section">
+      <div class="ref-sec-t">5 типов задач (шагов программы)</div>
+      <div class="ref-warn"><strong>Критический порядок:</strong> Сначала первоочередные → жизненно важные → условные → текущие. Производственные — только после всех остальных!</div>
+      <div class="ref-item" style="border-left-color:var(--red2)">
+        <div class="ref-it" style="color:var(--red2)">👥 Первоочередные</div>
+        <div class="ref-id">Организационные, кадровые, коммуникационные шаги. «Само собой разумеющиеся» — именно их чаще всего пропускают, и именно из-за этого программа рухнет.</div>
+        <div class="ref-ie">«Прочитайте программу» · «Свяжитесь с офисом» · «Передайте ответственному» · «Изучите ссылки»</div>
+      </div>
+      <div class="ref-item" style="border-left-color:var(--orange2)">
+        <div class="ref-it" style="color:var(--orange2)">⚠ Жизненно важные</div>
+        <div class="ref-id">Формируются после инспекции. Устраняют угрозы выживанию проекта. Что нельзя не делать в процессе выполнения.</div>
+        <div class="ref-ie">«Поддерживайте связь с офисом в процессе» · «Проводите инспекции — смотрите своими глазами»</div>
+      </div>
+      <div class="ref-item" style="border-left-color:var(--blue2)">
+        <div class="ref-it" style="color:var(--blue2)">🔍 Условные (Если…то)</div>
+        <div class="ref-id">Разведка, сбор данных, проверка осуществимости. Без них план оторван от реальности.</div>
+        <div class="ref-ie">«УСЛОВНАЯ: Если нет ответственного — назначьте одного из руководителей» · «УСЛОВНАЯ: Если завязли — применяйте технологию дебага»</div>
+      </div>
+      <div class="ref-item" style="border-left-color:var(--green2)">
+        <div class="ref-it" style="color:var(--green2)">⚙ Текущие (рабочие)</div>
+        <div class="ref-id">Конкретные направления действий с указанием кто, что и когда. Основная масса шагов программы.</div>
+        <div class="ref-ie">«Составьте список из 20 людей» · «Каждую неделю писать письма 5 людям из списка» · «Оформите выставку в приёмной»</div>
+      </div>
+      <div class="ref-item" style="border-left-color:var(--purple2)">
+        <div class="ref-it" style="color:var(--purple2)">📊 Производственные</div>
+        <div class="ref-id">Устанавливают квоты и количественные показатели. Работают ТОЛЬКО при наличии всех остальных типов задач.</div>
+        <div class="ref-ie">«Проводить не менее 5 экскурсий в неделю» · «Заключить 50 контрактов к концу месяца»</div>
+      </div>
+    </div>
+
+    <div class="ref-section">
+      <div class="ref-sec-t">Административная шкала (10 уровней)</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--gold2);background:rgba(201,168,76,.05);font-size:11px;color:var(--silver)"><strong style="color:var(--gold2)">1. Цель</strong> — «Зачем играть?» Абстрактно и долгосрочно.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--gold);background:rgba(201,168,76,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--gold)">2. Замыслы</strong> — Намерения для конкретных видов деятельности.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--silver);background:rgba(138,155,181,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--silver2)">3. Политика</strong> — Неизменные правила. Обеспечивают координацию.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--blue2);background:rgba(41,128,185,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--blue2)">4. Планы</strong> — Широкие краткосрочные намерения. Ещё не разбиты на действия.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--purple2);background:rgba(139,92,246,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--purple2)">5. Программы</strong> — Последовательность задач для выполнения плана.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--cyan2);background:rgba(23,165,137,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--cyan2)">6. Проекты</strong> — Программа меньшего масштаба для одного сложного шага.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--red);background:rgba(231,76,60,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--red2)">7. Приказы</strong> — «Сделай это сейчас». Тактика на местах.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--silver2);background:rgba(138,155,181,.03);font-size:11px;color:var(--silver)"><strong style="color:var(--silver2)">8. Идеальная картина</strong> — Как должна выглядеть область в идеале.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--green2);background:rgba(39,174,96,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--green2)">9. Статистики</strong> — Количественные показатели выполненной работы.</div>
+        <div style="padding:7px 11px;border-radius:4px;border-left:3px solid var(--orange2);background:rgba(230,126,34,.04);font-size:11px;color:var(--silver)"><strong style="color:var(--orange2)">10. ЦКП</strong> — Завершённый результат, который обменивается на ресурсы.</div>
+      </div>
+    </div>
+
+    <div class="ref-section">
+      <div class="ref-sec-t">12 принципов программирования</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">1. Любая идея лучше, чем её полное отсутствие.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">2. Результата можно добиться только при выполнении программы.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">3. Запущенная программа требует руководства.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">4. Программа без руководства провалится.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">5. Любая программа требует финансирования.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">6. Программа требует постоянного внимания.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">7. Лучшая программа затрагивает максимум уровней.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">8. Программы должны сами себя финансировать.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">9. Привлекайте помощь своими положительными сторонами.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">10. Программа плоха, если уводит от работающих программ.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">11. Не вкладывай больше, чем предполагаемая отдача.</div>
+        <div style="padding:6px 10px;background:rgba(255,255,255,.025);border-radius:4px;font-size:11px;color:var(--silver);line-height:1.5">12. Новая программа не должна наносить ущерб действующим.</div>
+      </div>
+    </div>
+
+    <div class="ref-section">
+      <div class="ref-sec-t">Типичные ошибки</div>
+      <div class="ref-warn" style="margin-bottom:7px"><strong>Пропуск первоочередных</strong> — самая частая причина провала. «Само собой разумеется» — не значит «не надо писать». Пишите всё явно.</div>
+      <div class="ref-warn" style="margin-bottom:7px"><strong>Производственные без остальных</strong> — статистика взлетит и рухнет. Квоты без инфраструктуры не работают.</div>
+      <div class="ref-warn" style="margin-bottom:7px"><strong>Разрыв в иерархии шкалы</strong> — нет цели → замыслы бессмысленны. Нет плана → программу не к чему прикрепить. Каждый уровень опирается на предыдущий.</div>
+      <div class="ref-warn"><strong>Проект вместо шага</strong> — проект создаётся только тогда, когда шаг оказался слишком объёмным. Не надо создавать проект на каждый шаг.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ MODAL: New Scale ════ -->
+<div class="modal-ov" id="modal-new" style="display:none" onclick="if(event.target===this)closeModal('modal-new')">
+  <div class="modal">
+    <div class="modal-t">✦ Новая шкала</div>
+    <div class="flabel">Название проекта / шкалы</div>
+    <input class="finp" id="new-name" placeholder="Например: Расширение отдела продаж Q3 2025" onkeydown="if(event.key==='Enter')doCreateScale()">
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new')">Отмена</button>
+      <button class="btn btn-gold" onclick="doCreateScale()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: Settings ════ -->
+<div class="modal-ov" id="modal-settings" style="display:none" onclick="if(event.target===this)closeModal('modal-settings')">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-t">⚙ Настройки и инструменты</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--gold);font-family:'JetBrains Mono',monospace;text-transform:uppercase;grid-column:1/-1;margin-bottom:2px">Экспорт текущей шкалы</div>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="doExportWord()">📄 Скачать Word (.doc)</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="doExportJSON()">💾 Экспорт JSON (все шкалы)</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="openMindMap()">🧠 Mind-карта (новое окно)</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="window.print()">🖨 Печать / PDF</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <div style="font-size:11px;letter-spacing:2px;color:var(--gold);font-family:'JetBrains Mono',monospace;text-transform:uppercase;grid-column:1/-1;margin-bottom:2px">Импорт данных</div>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="document.getElementById('imp').click()">📂 Импорт JSON</button>
+      <input type="file" id="imp" accept=".json" style="display:none" onchange="doImportJSON(event)">
+    </div>
+    <div style="margin-top:14px;padding:10px 13px;background:rgba(255,255,255,.03);border-radius:5px;font-size:11px;color:var(--muted)">
+      Экспорт Word и Mind-карта работают для <strong style="color:var(--silver2)">текущей открытой шкалы</strong>. Откройте шкалу в редакторе, затем используйте эти функции.
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: Mind Map ════ -->
+<div class="modal-ov" id="modal-mindmap" style="display:none" onclick="if(event.target===this)closeModal('modal-mindmap')">
+  <div class="modal" style="max-width:95vw;max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:12px;background:var(--bg3);flex-shrink:0">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold2);flex:1" id="mm-title">Mind-карта</div>
+      <button class="btn btn-blue btn-sm" onclick="saveMindMapSVG()">💾 Сохранить SVG</button>
+      <button class="btn btn-ghost btn-sm" onclick="fitMindMap()">🔍 По размеру</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-mindmap')">✕ Закрыть</button>
+    </div>
+    <div style="flex:1;overflow:hidden;min-height:500px;background:#0b0d14" id="mm-container">
+      <svg id="mm-svg" width="100%" height="100%" style="min-height:500px"></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  DATA STRUCTURES
+// ════════════════════════════════════════════════════
+
+const STEP_TYPES = {
+  primary:    { label:'Первоочередная',  icon:'👥', color:'stype-primary',    hint:'Организационные, кадровые, коммуникационные шаги. Без них программа рухнет.' },
+  vital:      { label:'Жизненно важная', icon:'⚠',  color:'stype-vital',      hint:'Формируются после инспекции. Устраняют угрозы выживанию.' },
+  conditional:{ label:'Условная',        icon:'🔍', color:'stype-conditional', hint:'«Если…то». Разведка, сбор данных, проверка осуществимости.' },
+  operating:  { label:'Текущая (рабочая)',icon:'⚙', color:'stype-operating',  hint:'Конкретные действия: кто, что, когда.' },
+  production: { label:'Производственная',icon:'📊', color:'stype-production',  hint:'Квоты. Работают ТОЛЬКО вместе со всеми остальными типами!' }
+};
+
+function emptyScale(name){
+  return { id:Date.now()+Math.random(), name:name||'Новая шкала', created:new Date().toISOString(), goal:'', purpose:'', policy:'', plan:'', ideal:'', stats:'', vfp:'', programs:[] };
+}
+
+function emptyProgram(n){
+  return { id:Date.now()+Math.random(), name:'Программа '+n, mainTask:'', steps:[] };
+}
+
+// Каждый шаг программы = задача. Поле type — тип задачи.
+function emptyStep(n){
+  return { id:Date.now()+Math.random(), name:'Задача '+n, type:'operating', deadline:'', responsible:'', notes:'', done:false, project:null };
+}
+
+function emptyProject(){
+  return { name:'', steps:[] };
+}
+
+function emptyProjStep(){
+  return { id:Date.now()+Math.random(), text:'', responsible:'' };
+}
+
+// ════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════
+
+let ST = { scales:[], currentId:null, undoStack:[] };
+
+// ── Supabase config (stored in localStorage, never in code) ──
+let SB = null; // supabase client instance
+
+function sbCfg(){
+  return {
+    url: localStorage.getItem('asp_sb_url')||'',
+    key: localStorage.getItem('asp_sb_key')||''
+  };
+}
+
+async function sbInit(){
+  const { url, key } = sbCfg();
+  if(!url || !key){ SB=null; return false; }
+  try{
+    // Load Supabase CDN dynamically
+    if(!window.supabase){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    SB = window.supabase.createClient(url, key);
+    return true;
+  } catch(e){ SB=null; console.error('Supabase init error:',e); return false; }
+}
+
+async function sbEnsureTable(){
+  // We store each scale as a row: id (text PK), data (jsonb), updated_at
+  // Table must exist — we provide SQL in setup modal
+}
+
+function curScale(){ return ST.scales.find(s=>s.id===ST.currentId)||null; }
+
+// Local save — always runs
+function saveLocal(){
+  try{ localStorage.setItem('asp_v3', JSON.stringify(ST.scales)); } catch(e){}
+}
+
+// Cloud save — debounced, non-blocking
+let _sbSaveTimer = null;
+function saveCloud(){
+  if(!SB) return;
+  clearTimeout(_sbSaveTimer);
+  _sbSaveTimer = setTimeout(async ()=>{
+    try{
+      const userId = await sbUserId();
+      const upsertData = ST.scales.map(s=>({
+        id: String(s.id),
+        user_id: userId,
+        data: s,
+        updated_at: new Date().toISOString()
+      }));
+      const { error } = await SB.from('adminscale_scales').upsert(upsertData, { onConflict:'id' });
+      if(error) console.error('Cloud save error:',error);
+      else updateSbStatus('✅ Синхронизировано', 'green');
+    } catch(e){ console.error('Cloud save exception:',e); updateSbStatus('⚠ Ошибка синхронизации','orange'); }
+  }, 800);
+}
+
+async function sbUserId(){
+  try{
+    const { data } = await SB.auth.getSession();
+    return data?.session?.user?.id || 'anonymous';
+  } catch(e){ return 'anonymous'; }
+}
+
+function save(){
+  saveLocal();
+  if(SB) saveCloud();
+}
+
+async function loadCloud(){
+  if(!SB) return false;
+  try{
+    updateSbStatus('⏳ Загрузка из облака…','blue');
+    const userId = await sbUserId();
+    const { data, error } = await SB.from('adminscale_scales').select('data').eq('user_id', userId);
+    if(error){ updateSbStatus('⚠ Ошибка загрузки','orange'); return false; }
+    if(data && data.length){
+      ST.scales = data.map(r=>r.data);
+      saveLocal();
+      updateSbStatus('✅ Загружено из облака','green');
+      return true;
+    }
+    updateSbStatus('☁ Облако пусто — используются локальные данные','silver');
+    return false;
+  } catch(e){ updateSbStatus('⚠ Ошибка подключения','orange'); return false; }
+}
+
+async function sbDeleteScale(scaleId){
+  if(!SB) return;
+  try{ await SB.from('adminscale_scales').delete().eq('id', String(scaleId)); } catch(e){}
+}
+
+function updateSbStatus(msg, color){
+  const colors = { green:'var(--green2)', orange:'var(--orange2)', blue:'var(--blue2)', silver:'var(--silver)' };
+  const el = document.getElementById('sb-status');
+  if(el){ el.textContent=msg; el.style.color = colors[color]||colors.silver; }
+  // Also update dot
+  const dotMap = { green:'green', orange:'orange', blue:'blue', silver:'grey' };
+  sbSetDot && sbSetDot(dotMap[color]||'grey');
+}
+
+function load(){
+  try{
+    const d = localStorage.getItem('asp_v3');
+    if(d) ST.scales = JSON.parse(d);
+  } catch(e){}
+}
+
+function pushUndo(){
+  ST.undoStack.push(JSON.stringify(ST.scales));
+  if(ST.undoStack.length > 40) ST.undoStack.shift();
+  document.getElementById('undo-btn').style.display='';
+}
+
+function doUndo(){
+  if(!ST.undoStack.length) return;
+  ST.scales = JSON.parse(ST.undoStack.pop());
+  if(!ST.undoStack.length) document.getElementById('undo-btn').style.display='none';
+  save(); renderAll();
+}
+
+function doSave(){
+  save();
+  toast(SB ? '💾 Сохранено + синхронизируется с облаком' : '💾 Сохранено локально');
+}
+
+// ════════════════════════════════════════════════════
+//  VIEWS
+// ════════════════════════════════════════════════════
+
+function gotoView(v){
+  ['dash','editor','review'].forEach(n=>{
+    document.getElementById('v-'+n).style.display = n===v ? '' : 'none';
+    const btn = document.getElementById('nb-'+n);
+    if(btn) btn.classList.toggle('act', n===v);
+  });
+  if(v==='review') renderReview();
+  if(v==='editor') renderEditor();
+  if(v==='dash')   renderDash();
+  document.getElementById('tb-title').textContent =
+    v==='editor' ? (curScale()?.name||'Редактор') :
+    v==='review' ? 'Обзор шкалы' : 'AdminScale Pro';
+}
+
+// ════════════════════════════════════════════════════
+//  SIDEBAR
+// ════════════════════════════════════════════════════
+
+function renderSidebar(){
+  const el = document.getElementById('scale-list');
+  if(!ST.scales.length){
+    el.innerHTML='<div style="padding:7px 12px;font-size:11px;color:var(--muted);font-style:italic">Нет шкал</div>';
+    return;
+  }
+  el.innerHTML = ST.scales.map(s=>`
+    <div class="sl-item${s.id===ST.currentId?' act':''}" onclick="openScale(${JSON.stringify(s.id)})">
+      <span class="sl-name">${esc(s.name)}</span>
+      <button class="sl-del" onclick="delScale(${JSON.stringify(s.id)},event)" title="Удалить">✕</button>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════
+
+function renderDash(){
+  const el = document.getElementById('dash-scales');
+  if(!ST.scales.length){ el.innerHTML=''; return; }
+  const html = ST.scales.map(s=>{
+    const steps = (s.programs||[]).flatMap(p=>p.steps||[]);
+    const done = steps.filter(x=>x.done).length;
+    const pct = steps.length ? Math.round(done/steps.length*100) : 0;
+    return `<div class="card" style="cursor:pointer;padding:16px" onclick="openScale(${JSON.stringify(s.id)})">
+      <div style="font-size:14px;font-weight:700;margin-bottom:3px">${esc(s.name)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:7px">${(s.programs||[]).length} программ · ${steps.length} задач</div>
+      ${s.goal?`<div style="font-size:11px;color:var(--silver);font-style:italic;margin-bottom:7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(s.goal)}</div>`:''}
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div class="prog-txt">${pct}% шагов выполнено</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="margin-top:22px"><div class="sec-hd"><span class="sec-n">МОИ ШКАЛЫ</span><h2 class="sec-t" style="font-size:20px">Открыть</h2><div class="sec-line"></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:11px">${html}</div></div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  EDITOR
+// ════════════════════════════════════════════════════
+
+function renderEditor(){
+  const scale = curScale();
+  const empty = document.getElementById('ed-empty');
+  const body  = document.getElementById('ed-body');
+  if(!scale){ empty.style.display=''; body.style.display='none'; return; }
+  empty.style.display='none'; body.style.display='';
+  document.getElementById('tb-title').textContent = scale.name;
+
+  const levels1to4 = [
+    {n:1,cls:'lc1',ic:'🎯',title:'ЦЕЛЬ',desc:'«Зачем играть?» — абстрактно и долгосрочно',f:'goal',ph:'Что является конечной целью?'},
+    {n:2,cls:'lc2',ic:'💡',title:'ЗАМЫСЛЫ',desc:'Намерения для конкретных видов деятельности',f:'purpose',ph:'Что именно мы хотим осуществить?'},
+    {n:3,cls:'lc3',ic:'📜',title:'ПОЛИТИКА / ИНСТРУКЦИИ',desc:'Неизменные правила, обеспечивающие координацию',f:'policy',ph:'Постоянные правила и принципы работы'},
+    {n:4,cls:'lc4',ic:'🗺',title:'ПЛАН',desc:'Широкое краткосрочное намерение — ещё не разбитое на действия',f:'plan',ph:'Как мы будем осуществлять замысел?'},
+  ];
+
+  const levels8to10 = [
+    {n:8,cls:'lc8',ic:'🌟',title:'ИДЕАЛЬНАЯ КАРТИНА',desc:'Как область должна выглядеть в идеале',f:'ideal',ph:'Опишите идеальное состояние'},
+    {n:9,cls:'lc9',ic:'📈',title:'СТАТИСТИКИ',desc:'Количественные показатели выполненной работы',f:'stats',ph:'Какие показатели измеряются?'},
+    {n:10,cls:'lc10',ic:'🏆',title:'ЦКП (Ценный Конечный Продукт)',desc:'Завершённый результат, который можно обменять на ресурсы',f:'vfp',ph:'Что является конечным продуктом?'},
+  ];
+
+  const lvlHtml = (arr) => arr.map(l=>`
+    <div class="lcard ${l.cls}">
+      <div class="lcard-hd" onclick="toggleLc('lc_${scale.id}_${l.n}','chv_${scale.id}_${l.n}')">
+        <span class="lcard-ic">${l.ic}</span>
+        <div class="lcard-meta">
+          <div class="lcard-num">УРОВЕНЬ ${l.n}</div>
+          <div class="lcard-title">${l.title}</div>
+          <div class="lcard-desc">${l.desc}</div>
+        </div>
+        <span class="lcard-chev" id="chv_${scale.id}_${l.n}">▶</span>
+      </div>
+      <div class="lcard-body" id="lc_${scale.id}_${l.n}" style="display:none">
+        <textarea class="fta" placeholder="${l.ph}" oninput="updField('${l.f}',this.value)" onblur="save()">${esc(scale[l.f]||'')}</textarea>
+      </div>
+    </div>`).join('');
+
+  const progsHtml = renderProgramsHtml(scale);
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:22px;flex-wrap:wrap">
+      <input style="background:none;border:none;outline:none;color:var(--white);font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;flex:1;min-width:180px"
+        value="${esc(scale.name)}" onchange="updName(this.value)" placeholder="Название шкалы">
+      <div style="display:flex;gap:7px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm no-print" onclick="gotoView('review')">👁 Обзор</button>
+        <button class="btn btn-gold btn-sm no-print" onclick="doSave()">💾 Сохранить</button>
+      </div>
+    </div>
+    ${lvlHtml(levels1to4)}
+    <div class="lcard lc5" style="border-left-color:var(--purple2)">
+      <div class="lcard-hd">
+        <span class="lcard-ic">⚡</span>
+        <div class="lcard-meta">
+          <div class="lcard-num">УРОВЕНЬ 5</div>
+          <div class="lcard-title">ПРОГРАММЫ</div>
+          <div class="lcard-desc">Каждая программа — список пронумерованных задач (шагов). Шаг программы = задача определённого типа.</div>
+        </div>
+        <button class="btn btn-green btn-sm no-print" onclick="addProgram()" style="flex-shrink:0">＋ Программа</button>
+      </div>
+      <div style="padding:0 17px 17px" id="progs-container">${progsHtml}</div>
+    </div>
+    <div class="lcard lc6" style="border-left-color:var(--cyan2)">
+      <div class="lcard-hd">
+        <span class="lcard-ic">🔧</span>
+        <div class="lcard-meta">
+          <div class="lcard-num">УРОВЕНЬ 6</div>
+          <div class="lcard-title">ПРОЕКТЫ</div>
+          <div class="lcard-desc">Создаются только для детализации одного сложного шага программы. Добавляйте через кнопку внутри шага.</div>
+        </div>
+      </div>
+      <div style="padding:0 17px 14px">
+        <div class="alert alert-cyan"><span>ℹ</span><span>Проект добавляется непосредственно к шагу программы через кнопку «🔧 Добавить Проект». Создавайте проект только когда шаг оказался слишком объёмным.</span></div>
+      </div>
+    </div>
+    <div class="lcard lc7" style="border-left-color:var(--red)">
+      <div class="lcard-hd">
+        <span class="lcard-ic">📢</span>
+        <div class="lcard-meta">
+          <div class="lcard-num">УРОВЕНЬ 7</div>
+          <div class="lcard-title">ПРИКАЗЫ / РАСПОРЯЖЕНИЯ</div>
+          <div class="lcard-desc">Устные/письменные указания выполнить шаг прямо сейчас. Добавляются как подшаги внутри Проекта.</div>
+        </div>
+      </div>
+    </div>
+    ${lvlHtml(levels8to10)}
+  `;
+}
+
+function renderProgramsHtml(scale){
+  if(!scale.programs||!scale.programs.length)
+    return `<div class="empty" style="padding:28px 20px"><div class="empty-ic" style="font-size:34px">⚡</div><div class="empty-t" style="font-size:15px">Нет программ</div><div class="empty-d">Нажмите «＋ Программа»</div></div>`;
+  return scale.programs.map((p,pi)=>renderProgHtml(scale,p,pi)).join('');
+}
+
+function renderProgHtml(scale, prog, pi){
+  const steps = prog.steps||[];
+  const done = steps.filter(s=>s.done).length;
+  const pct = steps.length ? Math.round(done/steps.length*100) : 0;
+
+  const typeOptions = Object.entries(STEP_TYPES).map(([k,v])=>
+    `<option value="${k}">${v.icon} ${v.label}</option>`).join('');
+
+  const stepsHtml = steps.length
+    ? steps.map((st,si)=>renderStepHtml(scale,prog,st,si)).join('')
+    : `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Нет задач. Нажмите «＋ Задача (шаг)»</div>`;
+
+  return `
+  <div class="prog-block" id="pb_${prog.id}">
+    <div class="prog-hd">
+      <span class="prog-num">ПРОГРАММА ${pi+1}</span>
+      <input class="prog-ni" value="${esc(prog.name)}" placeholder="Название программы"
+        onchange="updProg('${scale.id}','${prog.id}','name',this.value)">
+      <button class="btn btn-red btn-sm no-print" onclick="delProg('${scale.id}','${prog.id}')" title="Удалить программу">✕</button>
+    </div>
+    <div class="prog-body">
+      <div class="main-task-box">
+        <div class="mt-label">🎯 ГЛАВНАЯ ЗАДАЧА программы</div>
+        <input class="mt-inp" value="${esc(prog.mainTask||'')}" placeholder="Всеобъемлющее желание — конечный результат этой программы..."
+          onchange="updProg('${scale.id}','${prog.id}','mainTask',this.value)">
+      </div>
+
+      <div class="alert alert-gold" style="margin-bottom:11px">
+        <span>ℹ</span>
+        <span><strong>Правило:</strong> Шаги ниже — это и есть задачи программы. Сначала добавляйте <strong>Первоочередные</strong>, потом <strong>Жизненно важные</strong> и <strong>Условные</strong>, затем <strong>Текущие</strong> и в конце — <strong>Производственные</strong>.</span>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:7px">
+        <div style="font-size:10px;letter-spacing:2px;color:var(--blue2);font-family:'JetBrains Mono',monospace;text-transform:uppercase">📌 ШАГИ ПРОГРАММЫ (задачи)</div>
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap" class="no-print">
+          <select id="new-type-${prog.id}" class="type-sel" style="width:190px">${typeOptions}</select>
+          <button class="btn btn-blue btn-sm" onclick="addStep('${scale.id}','${prog.id}')">＋ Задача (шаг)</button>
+        </div>
+      </div>
+
+      <div id="steps_${prog.id}">${stepsHtml}</div>
+
+      <div class="prog-bar" style="margin-top:11px"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div class="prog-txt">${done}/${steps.length} задач выполнено (${pct}%)</div>
+    </div>
+  </div>`;
+}
+
+function renderStepHtml(scale, prog, step, si){
+  const t = STEP_TYPES[step.type]||STEP_TYPES.operating;
+  const projHtml = step.project
+    ? renderProjHtml(scale, prog, step)
+    : `<button class="btn btn-cyan btn-xs no-print" style="margin-top:8px" onclick="addProj('${scale.id}','${prog.id}','${step.id}')">🔧 Добавить Проект к этому шагу</button>`;
+
+  const typeOptions = Object.entries(STEP_TYPES).map(([k,v])=>
+    `<option value="${k}"${k===step.type?' selected':''}>${v.icon} ${v.label}</option>`).join('');
+
+  const warningHtml = step.type==='production'
+    ? `<div class="alert alert-warn" style="margin-bottom:7px"><span>⚠</span><span>Убедитесь, что у вас уже есть первоочередные, жизненно важные и условные задачи — иначе производственные не сработают.</span></div>`
+    : '';
+
+  return `
+  <div class="step-block ${t.color}" id="st_${step.id}" style="margin-bottom:9px">
+    <div class="step-hd">
+      <span class="step-num-badge">ШАГ ${si+1}</span>
+      <span class="step-type-badge">${t.icon} ${t.label}</span>
+      <input class="step-name-inp" value="${esc(step.name)}" placeholder="Название задачи..."
+        onchange="updStep('${scale.id}','${prog.id}','${step.id}','name',this.value)">
+      <button class="btn btn-red btn-xs no-print" onclick="delStep('${scale.id}','${prog.id}','${step.id}')" title="Удалить">✕</button>
+    </div>
+    <div class="step-meta-row">
+      <label>Тип:</label>
+      <select class="mini-inp" style="font-family:'Montserrat',sans-serif;font-size:11px" onchange="updStep('${scale.id}','${prog.id}','${step.id}','type',this.value)">${typeOptions}</select>
+      <label>📅</label>
+      <input type="date" class="mini-inp" value="${esc(step.deadline||'')}"
+        onchange="updStep('${scale.id}','${prog.id}','${step.id}','deadline',this.value)" title="Дедлайн">
+      <label>👤</label>
+      <input type="text" class="mini-inp" style="flex:1;max-width:180px" value="${esc(step.responsible||'')}" placeholder="Ответственный"
+        onchange="updStep('${scale.id}','${prog.id}','${step.id}','responsible',this.value)">
+    </div>
+    <div class="step-body">
+      ${warningHtml}
+      <div style="font-size:10px;color:var(--muted);font-style:italic;margin-bottom:8px">${t.hint}</div>
+      <textarea class="step-note" placeholder="Подробное описание задачи, примечания..."
+        oninput="updStep('${scale.id}','${prog.id}','${step.id}','notes',this.value)"
+        onblur="save()">${esc(step.notes||'')}</textarea>
+      <div class="check-row" style="margin-top:8px">
+        <input type="checkbox" class="chk" ${step.done?'checked':''}
+          onchange="updStep('${scale.id}','${prog.id}','${step.id}','done',this.checked)">
+        <span class="chk-label">Задача выполнена</span>
+      </div>
+      ${projHtml}
+    </div>
+  </div>`;
+}
+
+function renderProjHtml(scale, prog, step){
+  const proj = step.project;
+  const stepsHtml = (proj.steps||[]).map((ps,psi)=>`
+    <div class="proj-step">
+      <span class="proj-step-n">${psi+1}.</span>
+      <input class="proj-step-inp" value="${esc(ps.text||'')}" placeholder="Шаг проекта..."
+        onchange="updProjStep('${scale.id}','${prog.id}','${step.id}',${psi},'text',this.value)">
+      <input class="proj-step-resp" value="${esc(ps.responsible||'')}" placeholder="Исполнитель"
+        onchange="updProjStep('${scale.id}','${prog.id}','${step.id}',${psi},'responsible',this.value)">
+      <button class="proj-step-del no-print" onclick="delProjStep('${scale.id}','${prog.id}','${step.id}',${psi})">✕</button>
+    </div>`).join('');
+
+  return `
+  <div class="proj-block">
+    <div class="proj-title-row">
+      <span class="proj-badge">🔧 ПРОЕКТ (детализация этого шага):</span>
+      <input class="proj-name-inp" value="${esc(proj.name||'')}" placeholder="Название проекта..."
+        onchange="updProj('${scale.id}','${prog.id}','${step.id}','name',this.value)">
+      <button class="btn btn-red btn-xs no-print" onclick="delProj('${scale.id}','${prog.id}','${step.id}')">Удалить</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:9px">Шаги этого проекта — мини-задачи для выполнения данного шага программы:</div>
+    <div id="proj-steps_${step.id}">${stepsHtml}</div>
+    <button class="btn btn-cyan btn-xs no-print" style="margin-top:8px" onclick="addProjStep('${scale.id}','${prog.id}','${step.id}')">＋ Шаг проекта</button>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  REVIEW
+// ════════════════════════════════════════════════════
+
+function renderReview(){
+  const scale = curScale();
+  const el = document.getElementById('rev-body');
+  if(!scale){
+    el.innerHTML='<div class="empty"><div class="empty-ic">📋</div><div class="empty-t">Нет открытой шкалы</div></div>';
+    return;
+  }
+
+  const lvlRows = [
+    {n:1,ic:'🎯',t:'ЦЕЛЬ',f:'goal'},{n:2,ic:'💡',t:'ЗАМЫСЛЫ',f:'purpose'},
+    {n:3,ic:'📜',t:'ПОЛИТИКА',f:'policy'},{n:4,ic:'🗺',t:'ПЛАН',f:'plan'}
+  ].filter(l=>scale[l.f]).map(l=>`<tr><td style="white-space:nowrap;color:var(--silver2)">${l.ic} ${l.n}. ${l.t}</td><td>${esc(scale[l.f]).replace(/\n/g,'<br>')}</td></tr>`).join('');
+
+  const progsHtml = (scale.programs||[]).map((prog,pi)=>{
+    const steps = prog.steps||[];
+    const done = steps.filter(s=>s.done).length;
+    const stepsHtml = steps.map((st,si)=>{
+      const t = STEP_TYPES[st.type]||STEP_TYPES.operating;
+      return `<div style="padding:9px 12px;background:rgba(255,255,255,.02);border-radius:5px;margin-bottom:7px;border-left:2px solid ${getBorderColor(st.type)}">
+        <div style="display:flex;gap:9px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:600">${t.icon} Шаг ${si+1}: ${esc(st.name)}</span>
+          <span style="font-size:10px;color:var(--muted)">${t.label}</span>
+          ${st.deadline?`<span style="font-size:10px;color:var(--muted)">📅 ${st.deadline}</span>`:''}
+          ${st.responsible?`<span style="font-size:10px;color:var(--muted)">👤 ${esc(st.responsible)}</span>`:''}
+          <span style="font-size:10px;color:${st.done?'var(--green2)':'var(--muted)'}">${st.done?'✅ Выполнено':'○ В работе'}</span>
+        </div>
+        ${st.notes?`<div style="font-size:11px;color:var(--silver);margin-bottom:5px">${esc(st.notes).replace(/\n/g,'<br>')}</div>`:''}
+        ${st.project?`<div style="padding:7px 10px;background:rgba(23,165,137,.05);border:1px solid rgba(23,165,137,.2);border-radius:4px;margin-top:6px">
+          <div style="font-size:10px;color:var(--cyan2);margin-bottom:4px">🔧 Проект: ${esc(st.project.name||'')}</div>
+          ${(st.project.steps||[]).map((ps,psi)=>`<div style="font-size:11px;color:var(--silver);padding:2px 0 2px 11px">${psi+1}. ${esc(ps.text||'')}${ps.responsible?' <span style="color:var(--muted)">— '+esc(ps.responsible)+'</span>':''}</div>`).join('')}
+        </div>`:''}
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:22px">
+      <div style="font-size:14px;font-weight:700;color:var(--purple2);margin-bottom:5px">⚡ Программа ${pi+1}: ${esc(prog.name)}</div>
+      ${prog.mainTask?`<div style="font-size:12px;color:var(--gold);margin-bottom:8px;font-style:italic">🎯 Главная задача: ${esc(prog.mainTask)}</div>`:''}
+      <div style="font-size:11px;color:var(--muted);margin-bottom:9px">${done}/${steps.length} задач выполнено</div>
+      ${stepsHtml||'<div style="color:var(--muted);font-style:italic;font-size:12px">Нет задач</div>'}
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-style:italic;padding:11px">Нет программ</div>';
+
+  const lowerRows = [
+    {n:8,ic:'🌟',t:'ИДЕАЛЬНАЯ КАРТИНА',f:'ideal'},{n:9,ic:'📈',t:'СТАТИСТИКИ',f:'stats'},{n:10,ic:'🏆',t:'ЦКП',f:'vfp'}
+  ].filter(l=>scale[l.f]).map(l=>`<tr><td style="white-space:nowrap;color:var(--silver2)">${l.ic} ${l.n}. ${l.t}</td><td>${esc(scale[l.f]).replace(/\n/g,'<br>')}</td></tr>`).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:22px;flex-wrap:wrap">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600">${esc(scale.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">Создана: ${new Date(scale.created).toLocaleDateString('ru-RU')}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:7px" class="no-print">
+        <button class="btn btn-gold btn-sm" onclick="gotoView('editor')">✏ Редактировать</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Печать</button>
+      </div>
+    </div>
+    ${lvlRows?`<div class="card" style="margin-bottom:18px"><div class="flabel" style="margin-bottom:11px">Шкала</div><table class="rtable"><thead><tr><th style="width:200px">Уровень</th><th>Содержание</th></tr></thead><tbody>${lvlRows}</tbody></table></div>`:''}
+    <div class="card"><div class="flabel" style="margin-bottom:14px;color:var(--purple2)">Программы и задачи</div>${progsHtml}</div>
+    ${lowerRows?`<div class="card" style="margin-top:14px"><table class="rtable"><tbody>${lowerRows}</tbody></table></div>`:''}
+  `;
+}
+
+function getBorderColor(type){
+  const m = {primary:'var(--red2)',vital:'var(--orange2)',conditional:'var(--blue2)',operating:'var(--green2)',production:'var(--purple2)'};
+  return m[type]||'var(--silver)';
+}
+
+// ════════════════════════════════════════════════════
+//  MUTATIONS
+// ════════════════════════════════════════════════════
+
+function updField(f,v){ const s=curScale(); if(!s) return; pushUndo(); s[f]=v; save(); }
+function updName(v){ const s=curScale(); if(!s) return; pushUndo(); s.name=v; document.getElementById('tb-title').textContent=v; renderSidebar(); save(); renderDash(); }
+
+function addProgram(){
+  const s=curScale(); if(!s) return; pushUndo();
+  if(!s.programs) s.programs=[];
+  s.programs.push(emptyProgram(s.programs.length+1));
+  save(); renderEditor();
+}
+
+function delProg(sid,pid){
+  const s=ST.scales.find(x=>x.id==sid); if(!s) return;
+  if(!confirm('Удалить программу со всеми задачами?')) return;
+  pushUndo(); s.programs=s.programs.filter(p=>p.id!=pid);
+  save(); renderEditor();
+}
+
+function updProg(sid,pid,f,v){
+  const s=ST.scales.find(x=>x.id==sid); if(!s) return;
+  const p=s.programs.find(x=>x.id==pid); if(!p) return;
+  p[f]=v; save();
+}
+
+function addStep(sid,pid){
+  const s=ST.scales.find(x=>x.id==sid); if(!s) return;
+  const p=s.programs.find(x=>x.id==pid); if(!p) return;
+  const sel=document.getElementById('new-type-'+pid);
+  const type = sel ? sel.value : 'operating';
+  pushUndo();
+  if(!p.steps) p.steps=[];
+  const st=emptyStep(p.steps.length+1);
+  st.type=type;
+  p.steps.push(st);
+  save(); renderEditor();
+}
+
+function delStep(sid,pid,stid){
+  const s=ST.scales.find(x=>x.id==sid); if(!s) return;
+  const p=s.programs.find(x=>x.id==pid); if(!p) return;
+  if(!confirm('Удалить задачу?')) return;
+  pushUndo(); p.steps=p.steps.filter(x=>x.id!=stid);
+  save(); renderEditor();
+}
+
+function updStep(sid,pid,stid,f,v){
+  const st=findStep(sid,pid,stid); if(!st) return;
+  st[f]=v; save();
+  if(f==='done'){
+    const el=document.getElementById('st_'+stid);
+    if(el){ const chk=el.querySelector('.chk'); if(chk) chk.checked=v; }
+  }
+}
+
+function addProj(sid,pid,stid){
+  const st=findStep(sid,pid,stid); if(!st) return;
+  pushUndo(); st.project=emptyProject(); save(); renderEditor();
+}
+
+function delProj(sid,pid,stid){
+  const st=findStep(sid,pid,stid); if(!st) return;
+  if(!confirm('Удалить проект?')) return;
+  pushUndo(); st.project=null; save(); renderEditor();
+}
+
+function updProj(sid,pid,stid,f,v){
+  const st=findStep(sid,pid,stid); if(!st||!st.project) return;
+  st.project[f]=v; save();
+}
+
+function addProjStep(sid,pid,stid){
+  const st=findStep(sid,pid,stid); if(!st||!st.project) return;
+  pushUndo();
+  if(!st.project.steps) st.project.steps=[];
+  st.project.steps.push(emptyProjStep());
+  save(); renderEditor();
+}
+
+function delProjStep(sid,pid,stid,psi){
+  const st=findStep(sid,pid,stid); if(!st||!st.project) return;
+  pushUndo(); st.project.steps.splice(psi,1); save(); renderEditor();
+}
+
+function updProjStep(sid,pid,stid,psi,f,v){
+  const st=findStep(sid,pid,stid); if(!st||!st.project) return;
+  st.project.steps[psi][f]=v; save();
+}
+
+function findStep(sid,pid,stid){
+  const s=ST.scales.find(x=>x.id==sid); if(!s) return null;
+  const p=s.programs.find(x=>x.id==pid); if(!p) return null;
+  return p.steps.find(x=>x.id==stid)||null;
+}
+
+// ════════════════════════════════════════════════════
+//  SCALE MANAGEMENT
+// ════════════════════════════════════════════════════
+
+function openScale(id){
+  ST.currentId=id; renderSidebar(); gotoView('editor');
+}
+
+function delScale(id,ev){
+  ev.stopPropagation();
+  if(!confirm('Удалить шкалу?')) return;
+  ST.scales=ST.scales.filter(s=>s.id!==id);
+  if(ST.currentId===id){ ST.currentId=null; }
+  if(SB) sbDeleteScale(id);
+  save(); renderAll();
+}
+
+function openNewModal(){
+  document.getElementById('new-name').value='';
+  document.getElementById('modal-new').style.display='flex';
+  setTimeout(()=>document.getElementById('new-name').focus(),80);
+}
+
+function doCreateScale(){
+  const n=document.getElementById('new-name').value.trim()||'Новая шкала';
+  const s=emptyScale(n);
+  ST.scales.push(s); ST.currentId=s.id;
+  save(); closeModal('modal-new'); renderSidebar(); renderDash(); gotoView('editor');
+}
+
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+// ════════════════════════════════════════════════════
+//  TEMPLATES
+// ════════════════════════════════════════════════════
+
+function loadTemplate(tpl){
+  if(!confirm('Загрузить шаблон? Будет создана новая шкала.')) return;
+  let s;
+  if(tpl==='tours') s = buildToursTemplate();
+  else if(tpl==='tips') s = buildTipsTemplate();
+  else if(tpl==='wife') s = buildWifeTemplate();
+  else if(tpl==='marketing') s = buildMarketingTemplate();
+  else return;
+  ST.scales.push(s); ST.currentId=s.id;
+  save(); renderSidebar(); renderDash(); gotoView('editor');
+  toast('✅ Шаблон загружен');
+}
+
+function buildToursTemplate(){
+  const s = emptyScale('Экскурсии по компании (WISE)');
+  s.goal = 'Познакомить других людей с административной технологией Хаббарда посредством экскурсий по своей компании';
+  s.purpose = 'Расширить знание об административной технологии в деловом сообществе региона. Новые люди применяют административную технологию.';
+  s.policy = '1. Всегда указывать, что технология разработана Л. Роном Хаббардом\n2. Не брать компенсацию за предоставляемую информацию и помощь\n3. Поддерживать постоянную связь с офисом WISE';
+  s.plan = 'Показывать административную технологию в действии через регулярные экскурсии по компании для деловых партнёров, клиентов и знакомых';
+  s.ideal = 'Компания с высокостатным и профессиональным видом. Постоянный поток посетителей на экскурсии. Новая публика успешно применяет административную технологию.';
+  s.stats = '• Количество проведённых экскурсий в неделю\n• Количество людей, начавших изучать административную технологию\n• Количество звонков по объявлению в неделю';
+  s.vfp = 'Новая публика, получившая успех от знакомства с ЛРХ и административной технологией';
+
+  const p1 = emptyProgram(1);
+  p1.name = 'Подготовка к проведению экскурсий';
+  p1.mainTask = 'Новая публика, получившая успех от знакомства с ЛРХ и административной технологией';
+
+  const makeStep = (name, type, notes, responsible) => {
+    const st = emptyStep(0);
+    st.name = name; st.type = type; st.notes = notes||''; st.responsible = responsible||'Член WISE';
+    return st;
+  };
+
+  p1.steps = [
+    makeStep('Прочитайте эту программу и поймите её', 'primary', 'Необходимо понять всю программу целиком прежде чем приступать к её выполнению.'),
+    makeStep('Изучите ссылочные материалы: БОХС «Что мы ожидаем от саентолога» и ИП ОХС «Манеры»', 'primary', ''),
+    makeStep('Свяжитесь с ближайшим офисом WISE, сообщите о выполнении программы, узнайте имя наставника', 'primary', ''),
+    makeStep('Поддерживайте связь с местным офисом WISE в процессе выполнения', 'vital', 'Контакт поддерживается на протяжении всей программы.'),
+    makeStep('Осознайте: выполнение программы — это приключение. Намерение и время определяют результат.', 'vital', ''),
+    makeStep('УСЛОВНАЯ: Если замедлили темп — свяжитесь с консультантом WISE. Применяйте «Технологию дебага».', 'conditional', ''),
+    makeStep('Провести инспекцию компании как новый посетитель: оргсхема, ИЦО, коммуникационный центр, академия', 'operating', 'Проверить всё на предмет того, что нужно обновить, привести в порядок или заменить.'),
+    makeStep('Осмотреть приёмную и определить количество книг для выставки', 'operating', '«Проблемы работы», «Введение в саентологическую этику», пособия по административной технологии.'),
+    makeStep('Закупить книги и оформить выставку в приёмной компании', 'operating', ''),
+    makeStep('УСЛОВНАЯ: Если нет времени на экскурсии — назначить ответственного из старших руководителей', 'conditional', 'Нужен человек, который хорошо устанавливает контакт с публикой.'),
+    makeStep('Составить список из 20+ людей для приглашения на экскурсии', 'operating', 'Друзья, родственники, деловые партнёры, члены деловых клубов.'),
+    makeStep('Каждую неделю писать личные письма 5 людям из списка с приглашением на экскурсию', 'operating', 'Письмо: представиться, рассказать о применении административной технологии, пригласить позвонить ПРЯМО СЕЙЧАС.'),
+    makeStep('Предупредить секретаря о входящих звонках по записи на экскурсию', 'primary', 'Показать образец письма, объяснить как записывать на экскурсию.'),
+    makeStep('Разместить объявление в местной газете: «БЕСПЛАТНЫЕ ЭКСКУРСИИ. УЛУЧШИТЕ СВОЙ БИЗНЕС.»', 'operating', 'Выяснить оптимальный текст, размер, дни размещения.'),
+    makeStep('Проводить не менее 5 экскурсий в неделю', 'production', 'После выполнения всех предыдущих шагов.'),
+  ];
+
+  // Добавляем проект к шагу инспекции
+  p1.steps[6].project = {
+    name: 'Подготовка компании к высокостатному виду',
+    steps: [
+      {id:Date.now()+1, text:'Осмотреть оргсхему — обновить при необходимости', responsible:''},
+      {id:Date.now()+2, text:'Проверить информационный центр организации (ИЦО)', responsible:''},
+      {id:Date.now()+3, text:'Привести в порядок коммуникационный центр', responsible:''},
+      {id:Date.now()+4, text:'Проверить академию и библиотеку отдела квалификации', responsible:''},
+      {id:Date.now()+5, text:'Написать минипрограмму по устранению выявленных несоответствий', responsible:''},
+    ]
+  };
+
+  const p2 = emptyProgram(2);
+  p2.name = 'Проведение экскурсии с гостем';
+  p2.mainTask = 'Гость ознакомлен с административной технологией, передан консультанту WISE';
+  p2.steps = [
+    makeStep('Встретить гостя в приёмной согласно ИП ОХС «Манеры»', 'primary', 'Показать истинное гостеприимство.'),
+    makeStep('Узнать пожелания гостя. Расспросить о бизнесе и его проблемах.', 'operating', ''),
+    makeStep('Рассказать историю компании и как административная технология изменила бизнес', 'operating', 'Многие не знают, что ЛРХ написал 11-томную энциклопедию управления.'),
+    makeStep('Провести экскурсию: оргсхема → коммуникационный центр → ИЦО → академия → библиотека', 'operating', 'Не использовать жаргон. Давать определения. Вовлекать в двустороннее общение.'),
+    makeStep('УСЛОВНАЯ: Если гость готов к изучению — взять контакты и передать консультанту WISE', 'conditional', 'Назвать гостю имя или организацию, которая с ним свяжется.'),
+    makeStep('Выяснить, не было ли неудачного опыта с консультантами. При необходимости уладить антагонизм.', 'vital', ''),
+    makeStep('Спросить о проблемах компании гостя, выслушать, предложить помощь консультанта', 'operating', ''),
+    makeStep('Взять визитную карточку, сообщить имя консультанта который позвонит через 1-2 дня', 'operating', ''),
+    makeStep('Спросить, кого ещё из знакомых можно пригласить — добавить в список', 'operating', ''),
+    makeStep('Передать информацию о госте консультанту WISE после визита', 'operating', ''),
+    makeStep('В течение 48 часов проверить, связался ли консультант с гостем', 'vital', ''),
+    makeStep('УСЛОВНАЯ: Если гость не хочет звонка — предложить купить книгу «Проблемы работы»', 'conditional', ''),
+  ];
+
+  s.programs = [p1, p2];
+  return s;
+}
+
+function buildTipsTemplate(){
+  const s = emptyScale('ТИПы для сотрудников (WISE)');
+  s.goal = 'Создать эффективную систему обучения и ошляпливания сотрудников';
+  s.purpose = 'Обеспечить правильную последовательность постановки на пост, обучения и ошляпливания';
+  s.policy = '1. Соблюдать правильную последовательность: постановка на пост → ошляпливание → обучение\n2. Убедиться в 100% соответствии стандартам ЛРХ\n3. Удостоверяться что задачи действительно ВЫПОЛНЕНЫ — не формально';
+  s.plan = 'Составить и внедрить ТИПы для каждого сотрудника, начиная с руководителей';
+  s.ideal = 'Каждый сотрудник имеет собственный ТИП и выполняет его. Новые сотрудники правильно ставятся на пост.';
+  s.stats = '• Количество сотрудников с выполненным ТИПом\n• Количество ошляпленных руководителей\n• Статистики производства ошляпленных сотрудников';
+  s.vfp = 'Сотрудники компании, имеющие надлежащие ТИПы по обучению и ошляпливанию административной технологии ЛРХ';
+
+  const p1 = emptyProgram(1);
+  p1.name = 'Запуск программы ТИПов';
+  p1.mainTask = 'Сотрудники компании, имеющие надлежащие ТИПы по обучению и ошляпливанию административной технологии ЛРХ';
+
+  const mk = (name, type, notes, resp) => { const st=emptyStep(0); st.name=name; st.type=type; st.notes=notes||''; st.responsible=resp||''; return st; };
+
+  p1.steps = [
+    mk('Передать программу секретарю отдела квалификации (или исполнительному секретарю)', 'primary', 'Если нет ни одного — выполнять самостоятельно.', 'Член WISE'),
+    mk('Прочитать программу и понять её', 'primary', '', 'Секр. отд. квал.'),
+    mk('Осознать: вы несёте наибольшую ответственность за внедрение технологии ЛРХ в компании', 'primary', 'Взять полную ответственность за то, что все сотрудники получат стандартные ТИПы.', 'Член WISE'),
+    mk('Изучить ссылочные материалы ЛРХ по теме ошляпливания', 'primary', 'ИП ОХС: «Только АСП может выписывать ТИПы», «Ошляпливание администратора», «Ошляпливание жизненно необходимо» и др.', 'Секр. отд. квал.'),
+    mk('Отправить письмо в местный офис WISE о начале выполнения программы', 'primary', 'Также отправить копию в международный офис WISE.', 'Член WISE'),
+    mk('Поддерживать связь с местным офисом WISE в процессе выполнения', 'vital', '', 'Член WISE'),
+    mk('Проводить инспекции: убедиться что все действия 100% стандартны', 'vital', 'Удостоверяться что задачи действительно ВЫПОЛНЕНЫ, а не просто отмечены.', 'Член WISE'),
+    mk('УСЛОВНАЯ: Если задача застряла — применять «Технологию дебага»', 'conditional', 'ИП ОХС от 23 августа 1979 «Технология дебага» и «Проверочный список по технологии дебага».', 'Секр. отд. квал.'),
+    mk('УСЛОВНАЯ: Если не применяются формы программы «Внедрение ошляпливания персонала» — начать применять', 'conditional', 'Проконсультироваться с юристом для приведения форм в соответствие с законодательством.', 'Член WISE'),
+    mk('Составить список всех сотрудников сверху вниз по оргсхеме', 'operating', 'Наверху — человек с самой высокой должностью. Составить папку постановки на пост для каждого.', 'Секр. отд. квал.'),
+    mk('Провести интервью с каждым руководителем по проверочному списку ТИПа', 'operating', 'Начать с самого высокого поста и двигаться вниз по оргсхеме.', 'Секр. отд. квал.'),
+    mk('Выдать каждому сотруднику копию проверочного списка ТИПа', 'operating', 'Сообщить следующий шаг и добиться немедленного начала выполнения.', 'Секр. отд. квал.'),
+    mk('Распечатать и разместить проверочные списки в приёмной/отделе персонала для новых сотрудников', 'operating', '', 'Секр. отд. квал.'),
+    mk('После завершения первого ТИПа — разработать следующий совместно с сотрудником', 'operating', 'Если производство высокое — связаться с ХКУ для разработки продвинутого ТИПа.', 'Секр. отд. квал.'),
+    mk('Проводить не менее 2 интервью по ТИПам в неделю', 'production', '', 'Секр. отд. квал.'),
+  ];
+
+  s.programs = [p1];
+  return s;
+}
+
+// ════════════════════════════════════════════════════
+//  NEW TEMPLATES: Wife Evening + Marketing Agency
+// ════════════════════════════════════════════════════
+
+function buildWifeTemplate(){
+  const s = emptyScale('Вечер с женой (пример из книги)');
+  s.goal = 'Получить максимальное удовольствие от общения с собственной женой сегодня вечером';
+  s.purpose = 'Провести романтический вечер вдвоём, укрепить близость и создать яркие воспоминания';
+  s.policy = '1. Рабочий день заканчивается ровно в 19:00 — без исключений\n2. Телефон убрать в карман после 19:00\n3. Никаких рабочих разговоров вечером\n4. Учитывать пожелания жены, а не только свои предпочтения';
+  s.plan = 'Сходить в кино, поужинать в ресторане, погулять по ночной Москве';
+  s.ideal = 'Жена счастлива и удивлена. Вечер прошёл без накладок. Оба засыпают с улыбкой.';
+  s.stats = '• Настроение жены по 10-балльной шкале\n• Количество романтических вечеров в месяц';
+  s.vfp = 'Счастливая жена, проведшая незабываемый вечер с мужем';
+
+  const mk = (name,type,notes,resp) => { const st=emptyStep(0); st.name=name; st.type=type; st.notes=notes||''; st.responsible=resp||'Я'; return st; };
+
+  const p1 = emptyProgram(1);
+  p1.name = 'Вечерняя программа';
+  p1.mainTask = 'Счастливая жена, проведшая незабываемый вечер с мужем';
+
+  p1.steps = [
+    mk('Выбрать фильм и кинотеатр, определиться со временем сеанса', 'operating', 'Проверить расписание. Выбрать фильм, который понравится обоим.'),
+    mk('Согласовать фильм с женой', 'primary', 'Позвонить заранее — дать ей право выбора или согласовать вариант.'),
+    mk('УСЛОВНАЯ: Если жена не хочет в кино — подобрать альтернативу (театр, концерт, прогулка)', 'conditional', ''),
+    mk('Выбрать ресторан и забронировать лучший столик', 'operating', 'Учесть её любимую кухню. Позвонить и попросить поставить её любимые цветы на стол — сюрприз!'),
+    mk('Помыть машину', 'operating', 'Заехать на мойку по дороге домой или утром в день Х.'),
+    mk('Придумать место для романтической прогулки', 'operating', 'Набережная, Арбат, парк — что-то особенное, а не обычный маршрут.'),
+    mk('Закончить все рабочие дела к 19:00, отложить форс-мажоры на завтра', 'vital', 'Предупредить коллег с утра: «после 19 недоступен». Это жизненно важно — план рухнет, если задержаться.'),
+    mk('Заехать за женой на чистой машине', 'operating', 'Выглядеть хорошо. Цветы — опционально.'),
+    mk('Вовремя доехать до кинотеатра и посмотреть фильм', 'operating', ''),
+    mk('Головокружительно вкусно поужинать в ресторане', 'operating', 'Не торопиться. Телефон — в карман.'),
+    mk('Погулять в своё удовольствие, пока спать не захочется', 'operating', ''),
+    mk('Не менее 1 романтического вечера в месяц', 'production', ''),
+  ];
+
+  // Проект для шагов 4-5 (ресторан + переговоры)
+  p1.steps[3].project = {
+    name: 'Выбор и бронирование ресторана',
+    steps: [
+      {id:Date.now()+10, text:'Вспомнить все любимые рестораны', responsible:'Я'},
+      {id:Date.now()+11, text:'Залезть в интернет: ресторанные сайты, отзывы, интерьер, шеф-повар', responsible:'Я'},
+      {id:Date.now()+12, text:'Выбрать топ-3 варианта + запасной', responsible:'Я'},
+      {id:Date.now()+13, text:'Позвонить по выбранным — узнать наличие лучших столиков на вечер', responsible:'Я'},
+      {id:Date.now()+14, text:'Заранее продумать возможные возражения жены', responsible:'Я'},
+      {id:Date.now()+15, text:'Позвонить жене — уговорить пойти в ресторан (не называть конкретный!)', responsible:'Я'},
+      {id:Date.now()+16, text:'Выяснить её настроение и предложить ресторан «как будто идея только что пришла в голову»', responsible:'Я'},
+      {id:Date.now()+17, text:'Согласовать ресторан в процессе разговора', responsible:'Я'},
+      {id:Date.now()+18, text:'Позвонить в выбранный ресторан: забронировать столик + цветы + свечи', responsible:'Я'},
+      {id:Date.now()+19, text:'Позвонить в остальные рестораны — отменить брони', responsible:'Я'},
+    ]
+  };
+
+  s.programs = [p1];
+  return s;
+}
+
+function buildMarketingTemplate(){
+  const s = emptyScale('Маркетинговое агентство: рост на 50%');
+  s.goal = 'Стать самым прибыльным и эффективным маркетинговым агентством в регионе';
+  s.purpose = 'Увеличить поток клиентов и долю рынка через освоение новых каналов продвижения';
+  s.policy = '1. Все решения о запуске рекламы принимаются только на основе данных\n2. Тестирование обязательно перед масштабированием\n3. Обработка лидов — в течение 15 минут после получения\n4. Ни одна кампания не запускается без согласованного ТЗ';
+  s.plan = 'Увеличить количество новых клиентов на 50% к концу года за счёт запуска услуги продвижения через новые социальные сети';
+  s.ideal = 'Растущий поток качественных лидов. Отдел продаж загружен. CRM заполнена. Клиенты довольны и рекомендуют агентство.';
+  s.stats = '• Количество новых лидов в неделю (цель: +50% к базовой)\n• Стоимость привлечения лида (CPL)\n• Конверсия лид → контракт\n• Количество активных контрактов';
+  s.vfp = 'Растущий поток качественных лидов, заинтересованных в продукте, переданных в отдел продаж';
+
+  const mk = (name,type,notes,resp) => { const st=emptyStep(0); st.name=name; st.type=type; st.notes=notes||''; st.responsible=resp||''; return st; };
+
+  // Программа 1: Исследование и подготовка
+  const p1 = emptyProgram(1);
+  p1.name = 'Исследование аудитории и найм специалиста';
+  p1.mainTask = 'Понять площадки аудитории и иметь специалиста, способного на них работать';
+
+  p1.steps = [
+    mk('Прочитать программу и назначить ответственного за её выполнение', 'primary', '', 'Директор'),
+    mk('Провести опрос текущих клиентов: на каких площадках они проводят больше всего времени', 'conditional', 'Минимум 30 анкет. Использовать Google Forms или Typeform.', 'Маркетолог'),
+    mk('УСЛОВНАЯ: Если данные опроса противоречивы — провести 5 глубинных интервью', 'conditional', '', 'Маркетолог'),
+    mk('Составить портрет целевой аудитории на основе данных опроса', 'operating', 'Возраст, боли, площадки, формат контента.', 'Маркетолог'),
+    mk('Написать вакансию таргетолога для выявленных соцсетей и разместить', 'primary', '', 'HR / Директор'),
+    mk('Провести интервью с 5+ кандидатами, выбрать и нанять таргетолога', 'operating', 'Тестовое задание обязательно.', 'Директор'),
+    mk('Обучить таргетолога стандартам агентства и ввести в должность', 'primary', '', 'Директор / Ментор'),
+    mk('УСЛОВНАЯ: Если нет бюджета на найм — рассмотреть фриланс-подрядчика', 'conditional', ''),
+    mk('Поддерживать еженедельный контроль: встречи с таргетологом по результатам', 'vital', '', 'Директор'),
+  ];
+
+  // Программа 2: Запуск рекламной кампании
+  const p2 = emptyProgram(2);
+  p2.name = 'Разработка и запуск рекламной кампании (лид-магнит)';
+  p2.mainTask = 'Работающая рекламная кампания, генерирующая целевые лиды';
+
+  p2.steps = [
+    mk('Передать ТЗ на кампанию таргетологу, дизайнеру и копирайтеру', 'primary', '', 'Маркетолог'),
+    mk('Разработать и запустить рекламную кампанию', 'operating', 'Следовать Проекту — см. ниже.', 'Таргетолог'),
+    mk('Внедрить регламент обработки входящих заявок в CRM', 'operating', 'Скорость ответа: не более 15 минут. Назначить ответственного менеджера.', 'Директор продаж'),
+    mk('УСЛОВНАЯ: Если CTR ниже 1% — остановить кампанию и пересмотреть креативы', 'conditional', '', 'Таргетолог'),
+    mk('УСЛОВНАЯ: Если конверсия лид→встреча ниже 20% — пересмотреть скрипт отдела продаж', 'conditional', '', 'Директор продаж'),
+    mk('Проводить еженедельный разбор результатов и корректировать кампанию', 'vital', '', 'Таргетолог + Маркетолог'),
+    mk('Заключить 50 новых контрактов по этому направлению к концу следующего месяца', 'production', 'Только после запуска кампании и настройки CRM.', 'Отдел продаж'),
+  ];
+
+  // Проект для шага "Разработать и запустить рекламную кампанию"
+  p2.steps[1].project = {
+    name: 'Разработка рекламных материалов и настройка кампании',
+    steps: [
+      {id:Date.now()+50, text:'Изучить бриф и проанализировать боли (потребности) целевой аудитории', responsible:'Маркетолог'},
+      {id:Date.now()+51, text:'Написать ТЗ для дизайнеров и копирайтеров на создание рекламных материалов', responsible:'Маркетолог'},
+      {id:Date.now()+52, text:'Написать продающие тексты: боль → продукт → результат → цена', responsible:'Копирайтер'},
+      {id:Date.now()+53, text:'Создать рекламные баннеры и видеокреативы в 3+ форматах', responsible:'Дизайнер'},
+      {id:Date.now()+54, text:'Собрать сегменты целевой аудитории в рекламном кабинете', responsible:'Таргетолог'},
+      {id:Date.now()+55, text:'Запустить тестовые кампании с минимальным бюджетом (3-5 тыс. руб.) для проверки отклика', responsible:'Таргетолог'},
+      {id:Date.now()+56, text:'Проанализировать результаты тестов: CTR, CPL, конверсии', responsible:'Таргетолог'},
+      {id:Date.now()+57, text:'Скорректировать лучшие креативы по результатам тестов', responsible:'Дизайнер + Копирайтер'},
+      {id:Date.now()+58, text:'Открутить основной рекламный бюджет на масштабировании', responsible:'Таргетолог'},
+    ]
+  };
+
+  // Программа 3: Отдел продаж и удержание
+  const p3 = emptyProgram(3);
+  p3.name = 'Конверсия лидов в контракты';
+  p3.mainTask = '50 новых контрактов в первый месяц полноценной работы кампании';
+
+  p3.steps = [
+    mk('Провести обучение отдела продаж по новому продукту (соцсети)', 'primary', '', 'Директор продаж'),
+    mk('Написать и утвердить скрипт первого звонка лиду', 'primary', '', 'Директор продаж'),
+    mk('Настроить воронку в CRM под новое направление', 'operating', '', 'Директор продаж'),
+    mk('Назначить ответственного за каждый входящий лид в течение 15 минут', 'vital', '', 'Директор продаж'),
+    mk('УСЛОВНАЯ: Если лид не отвечает — применять трёхшаговую реактивацию', 'conditional', 'Звонок → WhatsApp → письмо с кейсом', 'Менеджер'),
+    mk('Составить первые 10 КП и отправить потенциальным клиентам', 'operating', '', 'Менеджер'),
+    mk('Провести еженедельные встречи: разбор воронки, конверсий, возражений', 'vital', '', 'Директор продаж'),
+    mk('Заключить 50 контрактов к концу месяца', 'production', '', 'Отдел продаж'),
+  ];
+
+  s.programs = [p1, p2, p3];
+  return s;
+}
+
+// ════════════════════════════════════════════════════
+//  WORD EXPORT
+// ════════════════════════════════════════════════════
+
+function doExportWord(){
+  const scale = curScale();
+  if(!scale){ toast('❌ Нет открытой шкалы'); return; }
+
+  const esc2 = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nl2br = s => esc2(s||'').replace(/\n/g,'<br>');
+
+  const typeLabelMap = { primary:'Первоочередная', vital:'Жизненно важная', conditional:'Условная', operating:'Текущая (рабочая)', production:'Производственная' };
+  const typeColorMap = { primary:'#c0392b', vital:'#e67e22', conditional:'#2980b9', operating:'#27ae60', production:'#8e44ad' };
+
+  let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
+<head><meta charset="utf-8"><title>${esc2(scale.name)}</title>
+<style>
+body{font-family:Calibri,Arial,sans-serif;font-size:12pt;margin:2cm;color:#1a1a2e}
+h1{font-size:20pt;color:#2c3e50;border-bottom:2px solid #c9a84c;padding-bottom:8px}
+h2{font-size:15pt;color:#8e44ad;margin-top:20px}
+h3{font-size:13pt;color:#2980b9;margin-top:16px}
+h4{font-size:11pt;color:#27ae60;margin-top:12px}
+.level-block{border-left:4px solid #c9a84c;padding:8px 12px;margin:10px 0;background:#fffdf5}
+.step-block{border-left:4px solid #ccc;padding:6px 12px;margin:6px 0}
+.proj-block{border-left:4px solid #17a589;padding:6px 12px;margin:6px 0;background:#f0faf9}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9pt;color:white;font-weight:bold}
+.meta{font-size:9pt;color:#666;margin:3px 0}
+table{width:100%;border-collapse:collapse;margin:8px 0}
+td,th{border:1px solid #ddd;padding:5px 8px;font-size:9pt}
+th{background:#f5f5f5;font-weight:bold}
+</style></head><body>`;
+
+  html += `<h1>🎯 ${esc2(scale.name)}</h1>`;
+  html += `<p class="meta">Создана: ${new Date(scale.created).toLocaleDateString('ru-RU')} | Экспортирована: ${new Date().toLocaleDateString('ru-RU')}</p>`;
+
+  const addLevel = (n,icon,title,text,color) => {
+    if(!text) return;
+    html += `<div class="level-block" style="border-left-color:${color}"><h3>${icon} ${n}. ${title}</h3><p style="white-space:pre-wrap">${nl2br(text)}</p></div>`;
+  };
+  addLevel(1,'🎯','ЦЕЛЬ',scale.goal,'#c9a84c');
+  addLevel(2,'💡','ЗАМЫСЛЫ',scale.purpose,'#e8c97a');
+  addLevel(3,'📜','ПОЛИТИКА',scale.policy,'#8a9bb5');
+  addLevel(4,'🗺','ПЛАН',scale.plan,'#5dade2');
+
+  if(scale.programs?.length){
+    html += `<h2>⚡ 5. ПРОГРАММЫ</h2>`;
+    scale.programs.forEach((prog,pi)=>{
+      html += `<h3>Программа ${pi+1}: ${esc2(prog.name)}</h3>`;
+      if(prog.mainTask) html += `<p><strong>🎯 Главная задача:</strong> ${esc2(prog.mainTask)}</p>`;
+      if(prog.steps?.length){
+        html += `<table><tr><th>#</th><th>Задача</th><th>Тип</th><th>Дедлайн</th><th>Ответственный</th><th>Статус</th></tr>`;
+        prog.steps.forEach((st,si)=>{
+          const tl = typeLabelMap[st.type]||st.type;
+          const tc = typeColorMap[st.type]||'#666';
+          html += `<tr>
+            <td style="text-align:center">${si+1}</td>
+            <td style="${st.done?'text-decoration:line-through;color:#999':''}">${esc2(st.name)}</td>
+            <td><span class="badge" style="background:${tc}">${tl}</span></td>
+            <td>${st.deadline||'—'}</td>
+            <td>${esc2(st.responsible||'—')}</td>
+            <td style="color:${st.done?'#27ae60':'#999'}">${st.done?'✅ Выполнено':'○ В работе'}</td>
+          </tr>`;
+          if(st.notes) html += `<tr><td></td><td colspan="5" style="color:#666;font-style:italic;font-size:9pt">${nl2br(st.notes)}</td></tr>`;
+          if(st.project){
+            html += `<tr><td></td><td colspan="5">
+              <div class="proj-block">
+                <strong style="color:#17a589">🔧 Проект: ${esc2(st.project.name||'')}</strong><br>
+                ${(st.project.steps||[]).map((ps,psi)=>`${psi+1}. ${esc2(ps.text||'')}${ps.responsible?' <em>('+esc2(ps.responsible)+')</em>':''}`).join('<br>')}
+              </div>
+            </td></tr>`;
+          }
+        });
+        html += `</table>`;
+      }
+    });
+  }
+
+  addLevel(8,'🌟','ИДЕАЛЬНАЯ КАРТИНА',scale.ideal,'#b8c9de');
+  addLevel(9,'📈','СТАТИСТИКИ',scale.stats,'#58d68d');
+  addLevel(10,'🏆','ЦКП',scale.vfp,'#f39c12');
+
+  html += `</body></html>`;
+
+  const blob = new Blob(['\ufeff'+html], {type:'application/msword;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (scale.name.replace(/[^\wа-яёa-z0-9]/gi,'_')||'adminscale') + '.doc';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('📄 Word-документ скачан');
+}
+
+// ════════════════════════════════════════════════════
+//  MIND MAP (SVG-based, inline)
+// ════════════════════════════════════════════════════
+
+function openMindMap(){
+  const scale = curScale();
+  if(!scale){ toast('❌ Нет открытой шкалы'); return; }
+  document.getElementById('mm-title').textContent = '🧠 ' + scale.name;
+  buildMindMapSVG(scale);
+  openModal('modal-mindmap');
+}
+
+function buildMindMapSVG(scale){
+  const svg = document.getElementById('mm-svg');
+  const container = document.getElementById('mm-container');
+  const W = container.offsetWidth || 1200;
+  const H = Math.max(container.offsetHeight || 700, 600);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+
+  // Colors
+  const COLORS = ['#c9a84c','#5dade2','#58d68d','#bb8fce','#ff6b6b','#f39c12','#48c9b0','#e8c97a'];
+  const BG = '#0b0d14';
+  const CARD_BG = '#12141f';
+  const TEXT = '#eceaf5';
+  const MUTED = '#4a5568';
+
+  // Build tree data
+  const root = { label: scale.name, color: COLORS[0], children: [] };
+
+  const levelNodes = [];
+  if(scale.goal)    levelNodes.push({ label: '1. ЦЕЛЬ', sub: scale.goal.slice(0,60)+(scale.goal.length>60?'…':''), color: COLORS[0] });
+  if(scale.purpose) levelNodes.push({ label: '2. ЗАМЫСЛЫ', sub: scale.purpose.slice(0,50)+(scale.purpose.length>50?'…':''), color: COLORS[1] });
+  if(scale.policy)  levelNodes.push({ label: '3. ПОЛИТИКА', sub: scale.policy.split('\n')[0].slice(0,50), color: '#8a9bb5' });
+  if(scale.plan)    levelNodes.push({ label: '4. ПЛАН', sub: scale.plan.slice(0,60)+(scale.plan.length>60?'…':''), color: COLORS[1] });
+
+  const progNode = { label: '5. ПРОГРАММЫ', color: '#bb8fce', children: [] };
+  (scale.programs||[]).forEach((prog,pi)=>{
+    const pn = { label: prog.name.slice(0,40), color: COLORS[pi%COLORS.length], children: [] };
+    if(prog.mainTask) pn.children.push({ label: '🎯 ' + prog.mainTask.slice(0,45)+(prog.mainTask.length>45?'…':''), color: '#c9a84c' });
+    (prog.steps||[]).slice(0,8).forEach(st=>{
+      const typeIcons = {primary:'👥',vital:'⚠',conditional:'🔍',operating:'⚙',production:'📊'};
+      const ic = typeIcons[st.type]||'•';
+      pn.children.push({ label: ic+' '+st.name.slice(0,40)+(st.name.length>40?'…':''), color: st.done?'#27ae60':'#5dade2' });
+    });
+    if((prog.steps||[]).length>8) pn.children.push({ label: `…ещё ${(prog.steps||[]).length-8} задач`, color: MUTED });
+    progNode.children.push(pn);
+  });
+
+  if(scale.ideal) levelNodes.push({ label: '8. ИДЕАЛЬНАЯ КАРТИНА', sub: scale.ideal.slice(0,50), color: '#b8c9de' });
+  if(scale.vfp)   levelNodes.push({ label: '10. ЦКП', sub: scale.vfp.slice(0,60)+(scale.vfp.length>60?'…':''), color: '#f39c12' });
+
+  root.children = [...levelNodes, progNode];
+
+  // Simple radial layout
+  svg.innerHTML = '';
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML = `<filter id="shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.5)"/></filter>`;
+  svg.appendChild(defs);
+
+  // Background
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('width',W); rect.setAttribute('height',H); rect.setAttribute('fill',BG);
+  svg.appendChild(rect);
+
+  const cx = W/2, cy = H/2;
+  const children = root.children;
+  const N = children.length;
+  const R1 = Math.min(W,H)*0.28; // radius for main children
+  const R2 = Math.min(W,H)*0.45; // radius for sub-children
+
+  // Draw root node
+  drawNode(svg, cx, cy, root.label, root.color, true);
+
+  children.forEach((child,i)=>{
+    const angle = (2*Math.PI*i/N) - Math.PI/2;
+    const x = cx + R1*Math.cos(angle);
+    const y = cy + R1*Math.sin(angle);
+
+    drawLine(svg, cx, cy, x, y, child.color);
+    drawNode(svg, x, y, child.label, child.color, false, child.sub);
+
+    if(child.children && child.children.length){
+      const sub = child.children;
+      const M = sub.length;
+      const spread = Math.min(Math.PI*0.6, M*0.35);
+      sub.forEach((sc,j)=>{
+        const baseAngle = angle;
+        const subAngle = baseAngle + spread*(j/(M>1?M-1:1)-0.5);
+        const sx = x + R2*0.5*Math.cos(subAngle);
+        const sy = y + R2*0.5*Math.sin(subAngle);
+        drawLine(svg, x, y, sx, sy, sc.color||child.color, true);
+        drawNode(svg, sx, sy, sc.label, sc.color||child.color, false, null, true);
+      });
+    }
+  });
+
+  // Pan + zoom
+  let vx=0, vy=0, vw=W, vh=H, dragging=false, lastX, lastY;
+  svg.addEventListener('mousedown', e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
+  svg.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const dx=(lastX-e.clientX)*vw/W, dy=(lastY-e.clientY)*vh/H;
+    vx+=dx; vy+=dy; lastX=e.clientX; lastY=e.clientY;
+    svg.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);
+  });
+  svg.addEventListener('mouseup',()=>dragging=false);
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const factor = e.deltaY>0?1.1:0.9;
+    vw*=factor; vh*=factor;
+    svg.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);
+  });
+}
+
+function drawLine(svg, x1,y1, x2,y2, color, dashed){
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+  line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+  line.setAttribute('stroke',color||'#4a5568');
+  line.setAttribute('stroke-width', dashed?1.5:2.5);
+  line.setAttribute('stroke-opacity','0.5');
+  if(dashed) line.setAttribute('stroke-dasharray','4,3');
+  svg.appendChild(line);
+}
+
+function drawNode(svg, x,y, label, color, isRoot, sub, small){
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('transform',`translate(${x},${y})`);
+
+  const maxW = small?90:isRoot?160:130;
+  const lines = wrapText(label, maxW/7.5);
+  const lineH = small?13:15;
+  const padX = small?10:14, padY = small?6:9;
+  const rw = Math.min(maxW, lines.reduce((m,l)=>Math.max(m,l.length*7.5),0)) + padX*2;
+  const rh = lines.length*lineH + padY*2 + (sub?16:0);
+  const rx = 8;
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('x',-rw/2); rect.setAttribute('y',-rh/2);
+  rect.setAttribute('width',rw); rect.setAttribute('height',rh); rect.setAttribute('rx',rx);
+  rect.setAttribute('fill', isRoot?color+'33':'#12141f');
+  rect.setAttribute('stroke',color); rect.setAttribute('stroke-width', isRoot?2.5:1.5);
+  rect.setAttribute('filter','url(#shadow)');
+  g.appendChild(rect);
+
+  const fontSize = small?10:isRoot?14:12;
+  lines.forEach((line,i)=>{
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',0);
+    t.setAttribute('y', -rh/2 + padY + (i+0.8)*lineH);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill', isRoot?color:'#eceaf5');
+    t.setAttribute('font-size',fontSize);
+    t.setAttribute('font-family',"'Montserrat',Arial,sans-serif");
+    t.setAttribute('font-weight', isRoot?'700':'400');
+    t.textContent = line;
+    g.appendChild(t);
+  });
+
+  if(sub){
+    const st = document.createElementNS('http://www.w3.org/2000/svg','text');
+    st.setAttribute('x',0);
+    st.setAttribute('y', rh/2 - padY);
+    st.setAttribute('text-anchor','middle');
+    st.setAttribute('fill','#4a5568');
+    st.setAttribute('font-size',9);
+    st.setAttribute('font-family',"'Montserrat',Arial,sans-serif");
+    st.textContent = sub.slice(0,28)+(sub.length>28?'…':'');
+    g.appendChild(st);
+  }
+
+  svg.appendChild(g);
+}
+
+function wrapText(text, maxChars){
+  if(!text) return [''];
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  words.forEach(w=>{
+    if((cur+' '+w).trim().length>maxChars){ if(cur) lines.push(cur); cur=w; }
+    else cur = (cur+' '+w).trim();
+  });
+  if(cur) lines.push(cur);
+  return lines.length?lines:[''];
+}
+
+function fitMindMap(){
+  const scale = curScale(); if(!scale) return;
+  const container = document.getElementById('mm-container');
+  const W = container.offsetWidth||1200, H = container.offsetHeight||600;
+  const svg = document.getElementById('mm-svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  buildMindMapSVG(scale);
+}
+
+function saveMindMapSVG(){
+  const svg = document.getElementById('mm-svg');
+  if(!svg) return;
+  const scale = curScale();
+  const data = new XMLSerializer().serializeToString(svg);
+  const blob = new Blob([data], {type:'image/svg+xml;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ((scale?.name||'mindmap').replace(/[^\wа-яёa-z0-9]/gi,'_')) + '_mindmap.svg';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('🖼 SVG сохранён');
+}
+
+// ════════════════════════════════════════════════════
+//  IMPORT / EXPORT
+// ════════════════════════════════════════════════════
+
+function doExportJSON(){
+  const b=new Blob([JSON.stringify(ST.scales,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download=`adminscale_${new Date().toISOString().split('T')[0]}.json`; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function doImportJSON(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!Array.isArray(d)) throw new Error('Ожидается массив шкал');
+      ST.scales=d; save(); renderAll(); toast('✅ Импортировано '+d.length+' шкал');
+    } catch(err){ alert('Ошибка импорта: '+err.message); }
+  };
+  r.readAsText(f); ev.target.value='';
+}
+
+// ════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════
+
+function toggleLc(id,chevId){
+  const el=document.getElementById(id); if(!el) return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'';
+  const c=document.getElementById(chevId); if(c) c.classList.toggle('open',!open);
+}
+
+function openRef(){ document.getElementById('ref-panel').classList.add('open'); }
+function closeRef(){ document.getElementById('ref-panel').classList.remove('open'); }
+function openModal(id){ document.getElementById(id).style.display='flex'; }
+
+function esc(s){
+  if(typeof s!=='string') return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
+}
+
+function renderAll(){
+  renderSidebar(); renderDash();
+  if(document.getElementById('v-editor').style.display!=='none') renderEditor();
+  if(document.getElementById('v-review').style.display!=='none') renderReview();
+}
+
+// ════════════════════════════════════════════════════
+//  KEYBOARD
+// ════════════════════════════════════════════════════
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){ e.preventDefault(); doSave(); }
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){ e.preventDefault(); doUndo(); }
+  if(e.key==='Escape'){ closeRef(); }
+});
+
+document.getElementById('new-name').addEventListener('keydown',e=>{
+  if(e.key==='Enter') doCreateScale();
+});
+
+// ════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════
+
+load(); // load from localStorage first (instant)
+
+async function initApp(){
+  renderSidebar();
+  renderDash();
+  gotoView('dash');
+
+  if(window.innerWidth<768){
+    document.getElementById('mob-btn').style.display='';
+  }
+
+  // Try Supabase if configured
+  const { url, key } = sbCfg();
+  if(url && key){
+    updateSbStatus('⏳ Подключение к Supabase…','blue');
+    const ok = await sbInit();
+    if(ok){
+      await loadCloud();
+      renderSidebar(); renderDash();
+    } else {
+      updateSbStatus('❌ Ошибка подключения — проверьте ключи','orange');
+    }
+  } else {
+    updateSbStatus('☁ Supabase не настроен','silver');
+  }
+}
+
+initApp();
+// ════════════════════════════════════════════════════
+//  SUPABASE MODAL FUNCTIONS
+// ════════════════════════════════════════════════════
+
+function openSupabaseModal(){
+  const { url, key } = sbCfg();
+  document.getElementById('sb-url-inp').value = url;
+  document.getElementById('sb-key-inp').value = key;
+  document.getElementById('sb-test-result').style.display='none';
+}
+
+// Override openModal to pre-fill Supabase modal
+const _openModalBase = openModal;
+// Re-define openModal to handle supabase pre-fill
+window.openModal = function(id){
+  if(id==='modal-supabase') openSupabaseModal();
+  document.getElementById(id).style.display='flex';
+};
+
+async function sbTestAndSave(){
+  const url = document.getElementById('sb-url-inp').value.trim();
+  const key = document.getElementById('sb-key-inp').value.trim();
+  if(!url||!key){ showSbResult('❌ Введите URL и ключ',false); return; }
+  if(!url.startsWith('https://')||!url.includes('supabase')){ showSbResult('❌ URL должен быть вида https://xxxx.supabase.co',false); return; }
+  showSbResult('⏳ Проверяем подключение…',null);
+  localStorage.setItem('asp_sb_url',url);
+  localStorage.setItem('asp_sb_key',key);
+  const ok = await sbInit();
+  if(!ok){ showSbResult('❌ Не удалось загрузить Supabase. Проверьте интернет.',false); return; }
+  try{
+    const { error } = await SB.from('adminscale_scales').select('id').limit(1);
+    if(error){ showSbResult('❌ Ошибка: '+error.message+'\n\nСкорее всего таблица не создана. Выполните SQL выше.',false); return; }
+    showSbResult('✅ Подключено! Загружаем данные из облака…',true);
+    sbSetDot('green');
+    updateSbStatus('✅ Подключено к Supabase','green');
+    const loaded = await loadCloud();
+    if(loaded){ renderSidebar(); renderDash(); }
+    setTimeout(()=>closeModal('modal-supabase'),1500);
+    toast('☁ Supabase подключён!');
+  } catch(e){ showSbResult('❌ '+e.message,false); }
+}
+
+function sbDisconnect(){
+  if(!confirm('Отключить Supabase? Данные останутся локально.')) return;
+  localStorage.removeItem('asp_sb_url'); localStorage.removeItem('asp_sb_key');
+  SB=null;
+  updateSbStatus('☁ Supabase отключён','silver');
+  sbSetDot('grey');
+  closeModal('modal-supabase');
+  toast('🔌 Supabase отключён');
+}
+
+function showSbResult(msg,ok){
+  const el=document.getElementById('sb-test-result'); el.style.display='block'; el.textContent=msg;
+  el.style.background=ok===true?'rgba(39,174,96,.1)':ok===false?'rgba(231,76,60,.1)':'rgba(41,128,185,.1)';
+  el.style.border='1px solid '+(ok===true?'rgba(39,174,96,.3)':ok===false?'rgba(231,76,60,.3)':'rgba(41,128,185,.3)');
+  el.style.color=ok===true?'var(--green2)':ok===false?'var(--red2)':'var(--blue2)';
+}
+
+function sbSetDot(color){
+  const dot=document.getElementById('sb-dot'); if(!dot) return;
+  const map={green:'var(--green2)',grey:'var(--muted)',orange:'var(--orange2)',blue:'var(--blue2)'};
+  dot.style.background=map[color]||map.grey;
+}
+
+function copySql(){
+  const sql=document.getElementById('sb-sql-copy').textContent;
+  navigator.clipboard.writeText(sql).then(()=>toast('📋 SQL скопирован!'));
+}
+</script>
+<!-- ════ MODAL: Supabase Setup ════ -->
+<div class="modal-ov" id="modal-supabase" style="display:none" onclick="if(event.target===this)closeModal('modal-supabase')">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-t">☁ Подключение Supabase</div>
+
+    <div class="alert alert-info" style="margin-bottom:16px">
+      <span>ℹ</span>
+      <span>Supabase хранит ваши шкалы в облаке и синхронизирует между устройствами. Ключи сохраняются только в вашем браузере — никуда не передаются.</span>
+    </div>
+
+    <div style="margin-bottom:13px">
+      <div class="flabel">Project URL</div>
+      <input class="finp" id="sb-url-inp" placeholder="https://xxxxxxxxxxxx.supabase.co" value="">
+    </div>
+    <div style="margin-bottom:13px">
+      <div class="flabel">Anon / Public Key</div>
+      <input class="finp" id="sb-key-inp" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." value="" type="password">
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">Используйте <strong>anon key</strong> (не service_role!) — он безопасен для браузера</div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:6px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:9px;letter-spacing:1px">📋 SQL — выполните один раз в Supabase → SQL Editor</div>
+      <pre id="sb-sql-copy" style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:11px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#a8d8a8;overflow-x:auto;white-space:pre;line-height:1.6">create table if not exists adminscale_scales (
+  id text primary key,
+  user_id text not null default 'anonymous',
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+
+alter table adminscale_scales enable row level security;
+
+create policy "allow_anon_all" on adminscale_scales
+  for all using (true) with check (true);
+
+create index if not exists idx_scales_user_id
+  on adminscale_scales(user_id);</pre>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="copySql()">📋 Скопировать SQL</button>
+    </div>
+
+    <div id="sb-test-result" style="display:none;padding:9px 13px;border-radius:5px;font-size:12px;margin-bottom:10px;white-space:pre-wrap"></div>
+
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="sbDisconnect()">🔌 Отключить</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-supabase')">Отмена</button>
+      <button class="btn btn-blue" onclick="sbTestAndSave()">🔗 Подключить и проверить</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
