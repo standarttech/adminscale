@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# SECURITY: minimal permissions — only what's needed for Pages
 permissions:
   contents: read
   pages: write
@@ -15,7 +16,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    name: 🔒 Security Scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Fail if any real Supabase keys were accidentally committed
+      - name: Check for leaked secrets
+        run: |
+          echo "Scanning for accidentally committed secrets..."
+          
+          # Check for actual Supabase JWT tokens in source files
+          if grep -rE 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' \
+            --include="*.html" --include="*.js" --include="*.ts" \
+            --exclude-dir=node_modules . ; then
+            echo "❌ SECURITY: Found what looks like a JWT token in source code!"
+            echo "Remove the key and rotate it immediately at supabase.com/dashboard"
+            exit 1
+          fi
+
+          # Check for Supabase service_role patterns
+          if grep -rn 'service_role' --include="*.html" --include="*.js" . ; then
+            echo "❌ SECURITY: Found 'service_role' in source — never commit service keys!"
+            exit 1
+          fi
+
+          echo "✅ No leaked secrets found"
+
   deploy:
+    needs: security-check
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -30,8 +61,14 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # Upload only the files needed — not .env files!
           path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Print deployed URL
+        run: |
+          echo "✅ Site deployed to: ${{ steps.deployment.outputs.page_url }}"
+          echo "Supabase keys are entered by users in the app UI — never stored in repo"

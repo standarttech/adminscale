@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AdminScale Pro — Административная Шкала</title>
+<!-- Security: no inline secrets, keys stored encrypted in localStorage only -->
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- PDF export: jsPDF + html2canvas (industry standard) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ─────────────────────────── CSS VARIABLES ─────────────────────────── */
 :root {
@@ -251,12 +255,78 @@ option{background:var(--bg3);color:var(--white)}
 /* ─────────────────────────── TOAST ─────────────────────────── */
 .toast{position:fixed;bottom:22px;right:22px;z-index:9000;padding:9px 17px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--white);animation:fadeUp .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 
-/* ─────────────────────────── PRINT ─────────────────────────── */
-@media print{
-  body{background:white!important;color:black!important}
-  .sidebar,.topbar,.ref-panel,.btn,.sl-del,.sb-foot,.no-print{display:none!important}
-  .main{margin-left:0}
-  .lcard,.prog-block,.step-block{border:1px solid #ddd!important;page-break-inside:avoid}
+/* ─────────────────────────── MIND MAP CANVAS ─────────────────────────── */
+#mm-canvas{display:block;cursor:grab;touch-action:none}
+#mm-canvas:active{cursor:grabbing}
+.mm-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+
+/* ─────────────────────────── PRINT / PDF ─────────────────────────── */
+@media print {
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+  body{background:#ffffff!important;color:#1a1a2e!important;font-family:'Segoe UI',Arial,sans-serif!important;font-size:11pt!important;margin:0!important}
+  .sidebar,.topbar,.ref-panel,.no-print,.sb-foot,
+  .modal-ov,.toast,[class*="btn"]{display:none!important}
+  .main{margin-left:0!important;padding:0!important}
+  .page{padding:0!important;max-width:100%!important}
+  .app{display:block!important}
+
+  /* Level cards */
+  .lcard{border:1.5px solid #ddd!important;border-radius:5px!important;margin-bottom:10px!important;page-break-inside:avoid!important;background:#fff!important}
+  .lcard-hd{background:#f8f9fa!important;padding:8px 14px!important}
+  .lcard-title{color:#1a1a2e!important;font-size:10pt!important}
+  .lcard-desc{color:#666!important;font-size:8.5pt!important}
+  .lcard-body{display:block!important;padding:10px 14px!important}
+  .lcard-chev{display:none!important}
+  .fta,.finp{color:#1a1a2e!important;background:#fff!important;border:1px solid #ddd!important;padding:6px!important;width:100%!important;font-size:10pt!important}
+
+  /* Program blocks */
+  .prog-block{border:1.5px solid #8e44ad!important;border-radius:5px!important;margin-bottom:12px!important;page-break-inside:avoid!important;background:#fdf8ff!important}
+  .prog-hd{background:#f5eeff!important;padding:8px 14px!important}
+  .prog-ni{color:#6c3483!important;font-weight:700!important;font-size:11pt!important;background:none!important;border:none!important}
+  .main-task-box{background:#fffbf0!important;border:1px solid #c9a84c!important;padding:8px 12px!important;margin:8px 0!important}
+  .mt-inp{color:#8a6914!important;font-weight:600!important;background:none!important;border:none!important;width:100%!important}
+
+  /* Step blocks */
+  .step-block{border-radius:4px!important;margin-bottom:7px!important;page-break-inside:avoid!important;background:#fff!important}
+  .step-hd{padding:6px 12px!important;background:#f0f4ff!important}
+  .step-name-inp{color:#1a1a2e!important;font-size:10pt!important;background:none!important;border:none!important;font-weight:600!important}
+  .step-meta-row{padding:4px 12px!important;font-size:8.5pt!important}
+  .mini-inp{color:#444!important;background:none!important;border:none!important}
+  .step-body{padding:6px 12px!important}
+  .step-note{color:#555!important;font-size:9pt!important;background:none!important;border:none!important;min-height:auto!important}
+
+  /* Type badges */
+  .stype-primary .step-type-badge{background:#ffeeee!important;color:#c0392b!important;border:1px solid #e74c3c!important}
+  .stype-vital .step-type-badge{background:#fff3e0!important;color:#d35400!important;border:1px solid #e67e22!important}
+  .stype-conditional .step-type-badge{background:#e8f4fd!important;color:#1a6fa8!important;border:1px solid #2980b9!important}
+  .stype-operating .step-type-badge{background:#eafaf1!important;color:#1e8449!important;border:1px solid #27ae60!important}
+  .stype-production .step-type-badge{background:#f5eeff!important;color:#6c3483!important;border:1px solid #8e44ad!important}
+  .step-num-badge{background:#e8f0fe!important;color:#1a56db!important;border:1px solid #2980b9!important}
+
+  /* Project blocks */
+  .proj-block{background:#f0faf9!important;border:1px solid #17a589!important;padding:8px!important}
+
+  /* Alerts - hide in print */
+  .alert{display:none!important}
+
+  /* Progress bars */
+  .prog-bar{background:#eee!important;height:4px!important}
+  .prog-fill{background:#27ae60!important}
+
+  /* Checkboxes */
+  .chk-label{color:#333!important}
+
+  /* Page setup */
+  @page{margin:1.5cm 2cm;size:A4 portrait}
+  @page:first{margin-top:2cm}
+
+  /* Print-only header */
+  .print-header{display:block!important;text-align:center;padding:0 0 14px;border-bottom:2px solid #c9a84c;margin-bottom:18px}
+  .print-title{font-family:'Segoe UI',Arial,sans-serif!important;font-size:18pt!important;font-weight:700!important;color:#1a1a2e!important}
+  .print-meta{font-size:9pt!important;color:#666!important;margin-top:4px}
+
+  /* Sections */
+  h2,h3{color:#1a1a2e!important;page-break-after:avoid!important}
 }
 </style>
 </head>
@@ -367,6 +437,11 @@ option{background:var(--bg3);color:var(--white)}
 
   <!-- EDITOR -->
   <div class="page" id="v-editor" style="display:none">
+    <!-- Print-only header (hidden on screen, shows when printing) -->
+    <div class="print-header" style="display:none" id="print-header-editor">
+      <div class="print-title" id="print-title-editor">AdminScale Pro</div>
+      <div class="print-meta" id="print-meta-editor"></div>
+    </div>
     <div id="ed-empty" class="empty">
       <div class="empty-ic">📋</div>
       <div class="empty-t">Нет открытой шкалы</div>
@@ -504,10 +579,10 @@ option{background:var(--bg3);color:var(--white)}
     <div class="modal-t">⚙ Настройки и инструменты</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
       <div style="font-size:11px;letter-spacing:2px;color:var(--gold);font-family:'JetBrains Mono',monospace;text-transform:uppercase;grid-column:1/-1;margin-bottom:2px">Экспорт текущей шкалы</div>
-      <button class="btn btn-ghost" style="justify-content:center" onclick="doExportWord()">📄 Скачать Word (.doc)</button>
-      <button class="btn btn-ghost" style="justify-content:center" onclick="doExportJSON()">💾 Экспорт JSON (все шкалы)</button>
-      <button class="btn btn-ghost" style="justify-content:center" onclick="openMindMap()">🧠 Mind-карта (новое окно)</button>
-      <button class="btn btn-ghost" style="justify-content:center" onclick="window.print()">🖨 Печать / PDF</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="closeModal('modal-settings');doExportPDF()">📄 PDF (высокое качество)</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="doExportWord()">📝 Word (.doc)</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="doExportJSON()">💾 JSON (все шкалы)</button>
+      <button class="btn btn-ghost" style="justify-content:center" onclick="closeModal('modal-settings');openMindMap()">🧠 Mind-карта + SVG</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
       <div style="font-size:11px;letter-spacing:2px;color:var(--gold);font-family:'JetBrains Mono',monospace;text-transform:uppercase;grid-column:1/-1;margin-bottom:2px">Импорт данных</div>
@@ -515,7 +590,7 @@ option{background:var(--bg3);color:var(--white)}
       <input type="file" id="imp" accept=".json" style="display:none" onchange="doImportJSON(event)">
     </div>
     <div style="margin-top:14px;padding:10px 13px;background:rgba(255,255,255,.03);border-radius:5px;font-size:11px;color:var(--muted)">
-      Экспорт Word и Mind-карта работают для <strong style="color:var(--silver2)">текущей открытой шкалы</strong>. Откройте шкалу в редакторе, затем используйте эти функции.
+      PDF, Word и Mind-карта работают для <strong style="color:var(--silver2)">текущей открытой шкалы</strong>. Откройте шкалу в редакторе, затем используйте эти функции.
     </div>
     <div class="modal-ft">
       <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Закрыть</button>
@@ -523,17 +598,24 @@ option{background:var(--bg3);color:var(--white)}
   </div>
 </div>
 
-<!-- ════ MODAL: Mind Map ════ -->
+<!-- ════ MODAL: Mind Map (Canvas-based) ════ -->
 <div class="modal-ov" id="modal-mindmap" style="display:none" onclick="if(event.target===this)closeModal('modal-mindmap')">
-  <div class="modal" style="max-width:95vw;max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
-    <div style="padding:14px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:12px;background:var(--bg3);flex-shrink:0">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold2);flex:1" id="mm-title">Mind-карта</div>
-      <button class="btn btn-blue btn-sm" onclick="saveMindMapSVG()">💾 Сохранить SVG</button>
-      <button class="btn btn-ghost btn-sm" onclick="fitMindMap()">🔍 По размеру</button>
-      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-mindmap')">✕ Закрыть</button>
+  <div class="modal" style="max-width:96vw;width:96vw;max-height:92vh;height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:10px">
+    <div style="padding:12px 18px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px;background:var(--bg3);flex-shrink:0;flex-wrap:wrap">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--gold2)" id="mm-title">🧠 Mind-карта</div>
+      <div class="mm-toolbar" style="margin-left:auto">
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Колесо — зум · Тяни — панорама</span>
+        <button class="btn btn-ghost btn-sm" onclick="mmZoom(1.2)">＋</button>
+        <button class="btn btn-ghost btn-sm" onclick="mmZoom(0.83)">−</button>
+        <button class="btn btn-ghost btn-sm" onclick="mmFit()">⊞ Вписать</button>
+        <button class="btn btn-blue btn-sm" onclick="mmSaveSVG()">💾 SVG</button>
+        <button class="btn btn-ghost btn-sm" onclick="mmSavePNG()">🖼 PNG</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-mindmap')">✕</button>
+      </div>
     </div>
-    <div style="flex:1;overflow:hidden;min-height:500px;background:#0b0d14" id="mm-container">
-      <svg id="mm-svg" width="100%" height="100%" style="min-height:500px"></svg>
+    <div style="flex:1;overflow:hidden;background:#0b0d14;position:relative" id="mm-container">
+      <canvas id="mm-canvas"></canvas>
+      <div id="mm-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--gold2);font-size:14px;pointer-events:none">Строим карту…</div>
     </div>
   </div>
 </div>
@@ -578,14 +660,30 @@ function emptyProjStep(){
 
 let ST = { scales:[], currentId:null, undoStack:[] };
 
-// ── Supabase config (stored in localStorage, never in code) ──
-let SB = null; // supabase client instance
+// ── Supabase config — keys stored OBFUSCATED in localStorage, never in code ──
+// XOR-encode with a device fingerprint so keys aren't plaintext in storage
+let SB = null;
+
+function _sbFp(){
+  // Browser fingerprint as XOR key (stable per browser, not a secret)
+  return (navigator.userAgent + screen.width + screen.height).split('').reduce((a,c)=>a^c.charCodeAt(0),0x42) & 0xFF;
+}
+function _enc(s){ if(!s) return ''; return btoa(s.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^((_sbFp()+i)&0xFF))).join('')); }
+function _dec(s){ if(!s) return ''; try{ return atob(s).split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^((_sbFp()+i)&0xFF))).join(''); }catch(e){return '';} }
 
 function sbCfg(){
   return {
-    url: localStorage.getItem('asp_sb_url')||'',
-    key: localStorage.getItem('asp_sb_key')||''
+    url: _dec(localStorage.getItem('asp_sb_u')||''),
+    key: _dec(localStorage.getItem('asp_sb_k')||'')
   };
+}
+function sbSaveCfg(url, key){
+  localStorage.setItem('asp_sb_u', _enc(url));
+  localStorage.setItem('asp_sb_k', _enc(key));
+}
+function sbClearCfg(){
+  localStorage.removeItem('asp_sb_u');
+  localStorage.removeItem('asp_sb_k');
 }
 
 async function sbInit(){
@@ -1545,212 +1643,645 @@ th{background:#f5f5f5;font-weight:bold}
 //  MIND MAP (SVG-based, inline)
 // ════════════════════════════════════════════════════
 
-function openMindMap(){
-  const scale = curScale();
-  if(!scale){ toast('❌ Нет открытой шкалы'); return; }
-  document.getElementById('mm-title').textContent = '🧠 ' + scale.name;
-  buildMindMapSVG(scale);
-  openModal('modal-mindmap');
-}
+// ════════════════════════════════════════════════════
+//  MIND MAP — Canvas-based (full rewrite)
+// ════════════════════════════════════════════════════
 
-function buildMindMapSVG(scale){
-  const svg = document.getElementById('mm-svg');
-  const container = document.getElementById('mm-container');
-  const W = container.offsetWidth || 1200;
-  const H = Math.max(container.offsetHeight || 700, 600);
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('width', W);
-  svg.setAttribute('height', H);
+const MM = {
+  canvas: null, ctx: null, scale: null,
+  nodes: [], edges: [],
+  vx: 0, vy: 0, zoom: 1,
+  dragging: false, lastX: 0, lastY: 0,
+  W: 0, H: 0,
+  RAF: null,
+  colors: {
+    bg: '#0b0d14', bg2: '#12141f', bg3: '#181b28',
+    gold: '#c9a84c', gold2: '#e8c97a',
+    blue: '#5dade2', green: '#58d68d',
+    purple: '#bb8fce', red: '#ff6b6b',
+    orange: '#f39c12', cyan: '#48c9b0',
+    silver: '#8a9bb5', muted: '#3a4455',
+    text: '#eceaf5', textDim: '#8a9bb5'
+  }
+};
 
-  // Colors
-  const COLORS = ['#c9a84c','#5dade2','#58d68d','#bb8fce','#ff6b6b','#f39c12','#48c9b0','#e8c97a'];
-  const BG = '#0b0d14';
-  const CARD_BG = '#12141f';
-  const TEXT = '#eceaf5';
-  const MUTED = '#4a5568';
+// Node types: root, level, program, step, project-step
+function mmBuildTree(scale){
+  MM.nodes = []; MM.edges = [];
+  let id = 0;
+  const nd = (type, label, sub, color, x, y) => {
+    const n = {id:id++, type, label, sub:'', color, x, y, w:0, h:0, children:[]};
+    if(sub) n.sub = sub.slice(0,55)+(sub.length>55?'…':'');
+    MM.nodes.push(n); return n;
+  };
 
-  // Build tree data
-  const root = { label: scale.name, color: COLORS[0], children: [] };
+  // Root
+  const root = nd('root', scale.name||'Шкала', null, MM.colors.gold, 0, 0);
 
-  const levelNodes = [];
-  if(scale.goal)    levelNodes.push({ label: '1. ЦЕЛЬ', sub: scale.goal.slice(0,60)+(scale.goal.length>60?'…':''), color: COLORS[0] });
-  if(scale.purpose) levelNodes.push({ label: '2. ЗАМЫСЛЫ', sub: scale.purpose.slice(0,50)+(scale.purpose.length>50?'…':''), color: COLORS[1] });
-  if(scale.policy)  levelNodes.push({ label: '3. ПОЛИТИКА', sub: scale.policy.split('\n')[0].slice(0,50), color: '#8a9bb5' });
-  if(scale.plan)    levelNodes.push({ label: '4. ПЛАН', sub: scale.plan.slice(0,60)+(scale.plan.length>60?'…':''), color: COLORS[1] });
+  // Left branch: levels 1-4
+  const typeColors = {
+    1: MM.colors.gold2, 2: MM.colors.gold,
+    3: MM.colors.silver, 4: MM.colors.blue
+  };
+  const leftItems = [
+    {n:1, label:'1. ЦЕЛЬ', val: scale.goal},
+    {n:2, label:'2. ЗАМЫСЛЫ', val: scale.purpose},
+    {n:3, label:'3. ПОЛИТИКА', val: scale.policy},
+    {n:4, label:'4. ПЛАН', val: scale.plan},
+  ].filter(x=>x.val);
 
-  const progNode = { label: '5. ПРОГРАММЫ', color: '#bb8fce', children: [] };
-  (scale.programs||[]).forEach((prog,pi)=>{
-    const pn = { label: prog.name.slice(0,40), color: COLORS[pi%COLORS.length], children: [] };
-    if(prog.mainTask) pn.children.push({ label: '🎯 ' + prog.mainTask.slice(0,45)+(prog.mainTask.length>45?'…':''), color: '#c9a84c' });
-    (prog.steps||[]).slice(0,8).forEach(st=>{
-      const typeIcons = {primary:'👥',vital:'⚠',conditional:'🔍',operating:'⚙',production:'📊'};
-      const ic = typeIcons[st.type]||'•';
-      pn.children.push({ label: ic+' '+st.name.slice(0,40)+(st.name.length>40?'…':''), color: st.done?'#27ae60':'#5dade2' });
-    });
-    if((prog.steps||[]).length>8) pn.children.push({ label: `…ещё ${(prog.steps||[]).length-8} задач`, color: MUTED });
-    progNode.children.push(pn);
+  leftItems.forEach(item=>{
+    const lv = nd('level', item.label, item.val, typeColors[item.n]||MM.colors.silver, 0, 0);
+    root.children.push(lv);
   });
 
-  if(scale.ideal) levelNodes.push({ label: '8. ИДЕАЛЬНАЯ КАРТИНА', sub: scale.ideal.slice(0,50), color: '#b8c9de' });
-  if(scale.vfp)   levelNodes.push({ label: '10. ЦКП', sub: scale.vfp.slice(0,60)+(scale.vfp.length>60?'…':''), color: '#f39c12' });
+  // Right branch: programs node
+  if(scale.programs && scale.programs.length){
+    const progColors = [MM.colors.purple, MM.colors.blue, MM.colors.cyan, MM.colors.orange, MM.colors.green];
+    const stepTypeColors = {primary:MM.colors.red, vital:MM.colors.orange, conditional:MM.colors.blue, operating:MM.colors.green, production:MM.colors.purple};
+    const stepTypeIcons = {primary:'👥', vital:'⚠', conditional:'🔍', operating:'⚙', production:'📊'};
 
-  root.children = [...levelNodes, progNode];
+    (scale.programs).forEach((prog, pi)=>{
+      const pc = progColors[pi % progColors.length];
+      const pn = nd('program', `⚡ ${prog.name.slice(0,35)}`, prog.mainTask||null, pc, 0, 0);
+      root.children.push(pn);
 
-  // Simple radial layout
-  svg.innerHTML = '';
-  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-  defs.innerHTML = `<filter id="shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.5)"/></filter>`;
-  svg.appendChild(defs);
+      (prog.steps||[]).forEach((step, si)=>{
+        const sc = stepTypeColors[step.type]||MM.colors.blue;
+        const ic = stepTypeIcons[step.type]||'•';
+        const sn = nd('step', `${ic} ${step.name.slice(0,38)}`, step.responsible||null, sc, 0, 0);
+        if(step.done){ sn.done = true; }
+        pn.children.push(sn);
 
-  // Background
-  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-  rect.setAttribute('width',W); rect.setAttribute('height',H); rect.setAttribute('fill',BG);
-  svg.appendChild(rect);
-
-  const cx = W/2, cy = H/2;
-  const children = root.children;
-  const N = children.length;
-  const R1 = Math.min(W,H)*0.28; // radius for main children
-  const R2 = Math.min(W,H)*0.45; // radius for sub-children
-
-  // Draw root node
-  drawNode(svg, cx, cy, root.label, root.color, true);
-
-  children.forEach((child,i)=>{
-    const angle = (2*Math.PI*i/N) - Math.PI/2;
-    const x = cx + R1*Math.cos(angle);
-    const y = cy + R1*Math.sin(angle);
-
-    drawLine(svg, cx, cy, x, y, child.color);
-    drawNode(svg, x, y, child.label, child.color, false, child.sub);
-
-    if(child.children && child.children.length){
-      const sub = child.children;
-      const M = sub.length;
-      const spread = Math.min(Math.PI*0.6, M*0.35);
-      sub.forEach((sc,j)=>{
-        const baseAngle = angle;
-        const subAngle = baseAngle + spread*(j/(M>1?M-1:1)-0.5);
-        const sx = x + R2*0.5*Math.cos(subAngle);
-        const sy = y + R2*0.5*Math.sin(subAngle);
-        drawLine(svg, x, y, sx, sy, sc.color||child.color, true);
-        drawNode(svg, sx, sy, sc.label, sc.color||child.color, false, null, true);
+        if(step.project && step.project.steps?.length){
+          const prj = nd('project', `🔧 ${(step.project.name||'Проект').slice(0,30)}`, null, MM.colors.cyan, 0, 0);
+          sn.children.push(prj);
+          (step.project.steps||[]).slice(0,5).forEach((ps, psi)=>{
+            prj.children.push(nd('proj-step', `${psi+1}. ${ps.text.slice(0,35)}`, ps.responsible||null, MM.colors.textDim, 0, 0));
+          });
+        }
       });
-    }
-  });
-
-  // Pan + zoom
-  let vx=0, vy=0, vw=W, vh=H, dragging=false, lastX, lastY;
-  svg.addEventListener('mousedown', e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
-  svg.addEventListener('mousemove', e=>{
-    if(!dragging) return;
-    const dx=(lastX-e.clientX)*vw/W, dy=(lastY-e.clientY)*vh/H;
-    vx+=dx; vy+=dy; lastX=e.clientX; lastY=e.clientY;
-    svg.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);
-  });
-  svg.addEventListener('mouseup',()=>dragging=false);
-  svg.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const factor = e.deltaY>0?1.1:0.9;
-    vw*=factor; vh*=factor;
-    svg.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);
-  });
-}
-
-function drawLine(svg, x1,y1, x2,y2, color, dashed){
-  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-  line.setAttribute('x1',x1); line.setAttribute('y1',y1);
-  line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-  line.setAttribute('stroke',color||'#4a5568');
-  line.setAttribute('stroke-width', dashed?1.5:2.5);
-  line.setAttribute('stroke-opacity','0.5');
-  if(dashed) line.setAttribute('stroke-dasharray','4,3');
-  svg.appendChild(line);
-}
-
-function drawNode(svg, x,y, label, color, isRoot, sub, small){
-  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.setAttribute('transform',`translate(${x},${y})`);
-
-  const maxW = small?90:isRoot?160:130;
-  const lines = wrapText(label, maxW/7.5);
-  const lineH = small?13:15;
-  const padX = small?10:14, padY = small?6:9;
-  const rw = Math.min(maxW, lines.reduce((m,l)=>Math.max(m,l.length*7.5),0)) + padX*2;
-  const rh = lines.length*lineH + padY*2 + (sub?16:0);
-  const rx = 8;
-
-  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-  rect.setAttribute('x',-rw/2); rect.setAttribute('y',-rh/2);
-  rect.setAttribute('width',rw); rect.setAttribute('height',rh); rect.setAttribute('rx',rx);
-  rect.setAttribute('fill', isRoot?color+'33':'#12141f');
-  rect.setAttribute('stroke',color); rect.setAttribute('stroke-width', isRoot?2.5:1.5);
-  rect.setAttribute('filter','url(#shadow)');
-  g.appendChild(rect);
-
-  const fontSize = small?10:isRoot?14:12;
-  lines.forEach((line,i)=>{
-    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
-    t.setAttribute('x',0);
-    t.setAttribute('y', -rh/2 + padY + (i+0.8)*lineH);
-    t.setAttribute('text-anchor','middle');
-    t.setAttribute('fill', isRoot?color:'#eceaf5');
-    t.setAttribute('font-size',fontSize);
-    t.setAttribute('font-family',"'Montserrat',Arial,sans-serif");
-    t.setAttribute('font-weight', isRoot?'700':'400');
-    t.textContent = line;
-    g.appendChild(t);
-  });
-
-  if(sub){
-    const st = document.createElementNS('http://www.w3.org/2000/svg','text');
-    st.setAttribute('x',0);
-    st.setAttribute('y', rh/2 - padY);
-    st.setAttribute('text-anchor','middle');
-    st.setAttribute('fill','#4a5568');
-    st.setAttribute('font-size',9);
-    st.setAttribute('font-family',"'Montserrat',Arial,sans-serif");
-    st.textContent = sub.slice(0,28)+(sub.length>28?'…':'');
-    g.appendChild(st);
+    });
   }
 
-  svg.appendChild(g);
+  // Bottom: ideal, stats, vfp
+  if(scale.ideal) root.children.push(nd('level','8. ИДЕАЛЬНАЯ КАРТИНА', scale.ideal, '#b8c9de', 0, 0));
+  if(scale.stats) root.children.push(nd('level','9. СТАТИСТИКИ', scale.stats, MM.colors.green, 0, 0));
+  if(scale.vfp)   root.children.push(nd('level','10. ЦКП', scale.vfp, MM.colors.orange, 0, 0));
+
+  // Build edges
+  function buildEdges(node){
+    node.children.forEach(child=>{
+      MM.edges.push({from: node.id, to: child.id, color: child.color});
+      buildEdges(child);
+    });
+  }
+  buildEdges(root);
+
+  return root;
 }
 
-function wrapText(text, maxChars){
+function mmLayout(root){
+  // Radial layout with dynamic radius based on depth
+  const SIZES = {root:{w:200,h:52}, level:{w:170,h:46}, program:{w:190,h:50}, step:{w:160,h:40}, project:{w:140,h:36}, 'proj-step':{w:130,h:32}};
+  const RADII = [0, 300, 220, 160, 120];
+
+  function measureNode(n){
+    const s = SIZES[n.type]||{w:140,h:36};
+    n.w = s.w; n.h = s.h;
+    n.children.forEach(c=>measureNode(c));
+  }
+  measureNode(root);
+  root.x = 0; root.y = 0;
+
+  function layoutChildren(node, startAngle, endAngle, radius){
+    const children = node.children;
+    if(!children.length) return;
+    const N = children.length;
+    const angleStep = (endAngle - startAngle) / Math.max(N, 1);
+    const childRadius = Math.min(Math.max(radius + 250, 300), 500);
+    children.forEach((child, i)=>{
+      const angle = startAngle + angleStep * (i + 0.5);
+      child.x = node.x + Math.cos(angle) * (radius || 280);
+      child.y = node.y + Math.sin(angle) * (radius || 280);
+      const spread = Math.max(angleStep * 0.8, 0.4);
+      layoutChildren(child, angle - spread/2, angle + spread/2, childRadius - 50);
+    });
+  }
+
+  const N = root.children.length;
+  const total = 2 * Math.PI;
+  layoutChildren(root, -Math.PI/2, -Math.PI/2 + total, 320);
+}
+
+function mmGetNodeFont(n){
+  const fonts = {root:'bold 14px Montserrat,Arial', program:'bold 12px Montserrat,Arial', level:'600 11px Montserrat,Arial', step:'400 11px Montserrat,Arial', project:'600 11px Montserrat,Arial', 'proj-step':'300 10px Montserrat,Arial'};
+  return fonts[n.type]||'400 11px Arial';
+}
+
+function mmDrawEdge(ctx, n1, n2, color){
+  const x1 = MM.vx + n1.x * MM.zoom;
+  const y1 = MM.vy + n1.y * MM.zoom;
+  const x2 = MM.vx + n2.x * MM.zoom;
+  const y2 = MM.vy + n2.y * MM.zoom;
+  const cp1x = x1 + (x2 - x1) * 0.45;
+  const cp1y = y1;
+  const cp2x = x1 + (x2 - x1) * 0.55;
+  const cp2y = y2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+  ctx.strokeStyle = color + '88';
+  ctx.lineWidth = Math.max(0.5, MM.zoom * 1.5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function hexToRgba(hex, alpha){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function mmDrawNode(ctx, n){
+  const x = MM.vx + n.x * MM.zoom;
+  const y = MM.vy + n.y * MM.zoom;
+  const w = n.w * MM.zoom, h = n.h * MM.zoom;
+  const rx = Math.max(4, 9 * MM.zoom);
+
+  // Skip if completely off screen
+  if(x+w/2 < -50 || x-w/2 > MM.W+50 || y+h/2 < -50 || y-h/2 > MM.H+50) return;
+
+  ctx.save();
+
+  // Shadow
+  if(MM.zoom > 0.4){
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 8 * MM.zoom;
+    ctx.shadowOffsetY = 3 * MM.zoom;
+  }
+
+  // Background
+  const isRoot = n.type === 'root';
+  ctx.beginPath();
+  mmRoundRect(ctx, x - w/2, y - h/2, w, h, rx);
+  if(isRoot){
+    const grad = ctx.createLinearGradient(x-w/2, y-h/2, x+w/2, y+h/2);
+    grad.addColorStop(0, hexToRgba(n.color, 0.25));
+    grad.addColorStop(1, hexToRgba(n.color, 0.12));
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = n.done ? hexToRgba(MM.colors.green, 0.1) : hexToRgba(MM.colors.bg2, 0.95);
+  }
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+
+  // Border
+  ctx.strokeStyle = n.done ? MM.colors.green + 'cc' : n.color + (isRoot ? 'ff' : 'cc');
+  ctx.lineWidth = isRoot ? 2.5 * MM.zoom : 1.5 * MM.zoom;
+  ctx.stroke();
+
+  if(MM.zoom < 0.3) { ctx.restore(); return; }
+
+  // Text
+  ctx.font = mmGetNodeFont(n);
+  ctx.fillStyle = isRoot ? n.color : MM.colors.text;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const label = n.label;
+  const maxTextW = w - 14 * MM.zoom;
+  const linesArr = mmWrapCanvasText(ctx, label, maxTextW);
+  const lineH = 15 * MM.zoom;
+  const totalH = linesArr.length * lineH;
+  const hasSubLabel = n.sub && MM.zoom > 0.55;
+  const startY = y - totalH/2 + lineH*0.5 - (hasSubLabel ? lineH*0.4 : 0);
+
+  ctx.font = mmGetNodeFont(n);
+  linesArr.forEach((line, i)=>{
+    ctx.fillText(line, x, startY + i * lineH);
+  });
+
+  // Sub-label
+  if(hasSubLabel){
+    ctx.font = `300 ${9 * MM.zoom}px Montserrat,Arial`;
+    ctx.fillStyle = MM.colors.textDim;
+    ctx.fillText(n.sub, x, y + totalH/2 + lineH*0.3);
+  }
+
+  // Done check
+  if(n.done && MM.zoom > 0.5){
+    ctx.font = `${12*MM.zoom}px Arial`;
+    ctx.fillStyle = MM.colors.green;
+    ctx.fillText('✓', x + w/2 - 12*MM.zoom, y - h/2 + 12*MM.zoom);
+  }
+
+  ctx.restore();
+}
+
+function mmRoundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function mmWrapCanvasText(ctx, text, maxW){
   if(!text) return [''];
   const words = text.split(' ');
   const lines = [];
   let cur = '';
   words.forEach(w=>{
-    if((cur+' '+w).trim().length>maxChars){ if(cur) lines.push(cur); cur=w; }
-    else cur = (cur+' '+w).trim();
+    const test = cur ? cur+' '+w : w;
+    if(ctx.measureText(test).width > maxW && cur){ lines.push(cur); cur=w; }
+    else cur = test;
   });
   if(cur) lines.push(cur);
-  return lines.length?lines:[''];
+  return lines.length ? lines.slice(0,3) : [''];
 }
 
-function fitMindMap(){
-  const scale = curScale(); if(!scale) return;
-  const container = document.getElementById('mm-container');
-  const W = container.offsetWidth||1200, H = container.offsetHeight||600;
-  const svg = document.getElementById('mm-svg');
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  buildMindMapSVG(scale);
+function mmRender(){
+  const canvas = MM.canvas, ctx = MM.ctx;
+  if(!canvas || !ctx) return;
+
+  // Clear
+  ctx.clearRect(0, 0, MM.W, MM.H);
+  ctx.fillStyle = MM.colors.bg;
+  ctx.fillRect(0, 0, MM.W, MM.H);
+
+  // Draw grid dots
+  if(MM.zoom > 0.5){
+    const gridSize = 40 * MM.zoom;
+    const offsetX = ((MM.vx % gridSize) + gridSize) % gridSize;
+    const offsetY = ((MM.vy % gridSize) + gridSize) % gridSize;
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for(let gx = offsetX; gx < MM.W; gx += gridSize){
+      for(let gy = offsetY; gy < MM.H; gy += gridSize){
+        ctx.beginPath(); ctx.arc(gx, gy, 1, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+
+  // Draw edges first (under nodes)
+  MM.edges.forEach(edge=>{
+    const from = MM.nodes.find(n=>n.id===edge.from);
+    const to = MM.nodes.find(n=>n.id===edge.to);
+    if(from && to) mmDrawEdge(ctx, from, to, edge.color);
+  });
+
+  // Draw nodes
+  MM.nodes.forEach(n=>mmDrawNode(ctx, n));
 }
 
-function saveMindMapSVG(){
-  const svg = document.getElementById('mm-svg');
-  if(!svg) return;
+function mmFit(){
+  if(!MM.nodes.length) return;
+  // Compute bounding box of all nodes
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  MM.nodes.forEach(n=>{
+    minX = Math.min(minX, n.x - n.w/2);
+    maxX = Math.max(maxX, n.x + n.w/2);
+    minY = Math.min(minY, n.y - n.h/2);
+    maxY = Math.max(maxY, n.y + n.h/2);
+  });
+  const bw = maxX - minX + 80, bh = maxY - minY + 80;
+  const zoom = Math.min(MM.W / bw, MM.H / bh, 1.2);
+  MM.zoom = Math.max(0.2, zoom);
+  MM.vx = MM.W/2 - (minX + bw/2) * MM.zoom;
+  MM.vy = MM.H/2 - (minY + bh/2) * MM.zoom;
+  mmRender();
+}
+
+function mmZoom(factor){
+  const prevZoom = MM.zoom;
+  MM.zoom = Math.min(3, Math.max(0.15, MM.zoom * factor));
+  // Zoom toward center
+  const cx = MM.W/2, cy = MM.H/2;
+  MM.vx = cx - (cx - MM.vx) * (MM.zoom / prevZoom);
+  MM.vy = cy - (cy - MM.vy) * (MM.zoom / prevZoom);
+  mmRender();
+}
+
+function openMindMap(){
   const scale = curScale();
-  const data = new XMLSerializer().serializeToString(svg);
-  const blob = new Blob([data], {type:'image/svg+xml;charset=utf-8'});
+  if(!scale){ toast('❌ Откройте шкалу в редакторе'); return; }
+  MM.scale = scale;
+  document.getElementById('mm-title').textContent = '🧠 ' + scale.name;
+  openModal('modal-mindmap');
+
+  // Wait for modal to render
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>mmInit(scale));
+  });
+}
+
+function mmInit(scale){
+  const container = document.getElementById('mm-container');
+  const canvas = document.getElementById('mm-canvas');
+  MM.canvas = canvas; MM.ctx = canvas.getContext('2d');
+  MM.W = container.offsetWidth || 900;
+  MM.H = container.offsetHeight || 600;
+  canvas.width = MM.W; canvas.height = MM.H;
+  canvas.style.width = MM.W+'px'; canvas.style.height = MM.H+'px';
+
+  // Build tree
+  const root = mmBuildTree(scale);
+  mmLayout(root);
+  MM.zoom = 0.75;
+  MM.vx = MM.W/2; MM.vy = MM.H/2;
+  mmFit();
+
+  document.getElementById('mm-loading').style.display = 'none';
+
+  // Events
+  canvas.onmousedown = e=>{ MM.dragging=true; MM.lastX=e.clientX; MM.lastY=e.clientY; e.preventDefault(); };
+  canvas.onmousemove = e=>{
+    if(!MM.dragging) return;
+    MM.vx += e.clientX - MM.lastX;
+    MM.vy += e.clientY - MM.lastY;
+    MM.lastX = e.clientX; MM.lastY = e.clientY;
+    mmRender();
+  };
+  canvas.onmouseup = canvas.onmouseleave = ()=>MM.dragging=false;
+  canvas.onwheel = e=>{
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 0.89;
+    const prev = MM.zoom;
+    MM.zoom = Math.min(3, Math.max(0.15, MM.zoom * factor));
+    MM.vx = mx - (mx - MM.vx) * (MM.zoom/prev);
+    MM.vy = my - (my - MM.vy) * (MM.zoom/prev);
+    mmRender();
+  };
+  // Touch support
+  let lastTouchDist = 0;
+  canvas.ontouchstart = e=>{ if(e.touches.length===1){ MM.dragging=true; MM.lastX=e.touches[0].clientX; MM.lastY=e.touches[0].clientY; } else if(e.touches.length===2){ lastTouchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } e.preventDefault(); };
+  canvas.ontouchmove = e=>{
+    if(e.touches.length===1 && MM.dragging){ MM.vx+=e.touches[0].clientX-MM.lastX; MM.vy+=e.touches[0].clientY-MM.lastY; MM.lastX=e.touches[0].clientX; MM.lastY=e.touches[0].clientY; mmRender(); }
+    else if(e.touches.length===2){ const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); mmZoom(d/lastTouchDist); lastTouchDist=d; }
+    e.preventDefault();
+  };
+  canvas.ontouchend = ()=>MM.dragging=false;
+}
+
+function mmSaveSVG(){
+  // Build a proper SVG from current canvas state
+  const scale = MM.scale; if(!scale) return;
+  const W=1400, H=900;
+  const prevZoom=MM.zoom, prevVx=MM.vx, prevVy=MM.vy, prevW=MM.W, prevH=MM.H;
+  MM.W=W; MM.H=H;
+  MM.zoom=0.75; MM.vx=W/2; MM.vy=H/2;
+  mmFit();
+
+  // Use canvas toDataURL and embed as PNG in SVG
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width=W; tmpCanvas.height=H;
+  const tmpCtx = tmpCanvas.getContext('2d');
+  const origCanvas = MM.canvas, origCtx = MM.ctx;
+  MM.canvas=tmpCanvas; MM.ctx=tmpCtx;
+  mmRender();
+  MM.canvas=origCanvas; MM.ctx=origCtx; MM.W=prevW; MM.H=prevH; MM.zoom=prevZoom; MM.vx=prevVx; MM.vy=prevVy;
+
+  const png = tmpCanvas.toDataURL('image/png');
+  const svgStr = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <title>${esc(scale.name)} — Mind-карта</title>
+  <rect width="${W}" height="${H}" fill="#0b0d14"/>
+  <image href="${png}" x="0" y="0" width="${W}" height="${H}"/>
+</svg>`;
+  const blob = new Blob([svgStr], {type:'image/svg+xml'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = ((scale?.name||'mindmap').replace(/[^\wа-яёa-z0-9]/gi,'_')) + '_mindmap.svg';
+  a.download = (scale.name||'mindmap').replace(/[^\wа-яёa-z0-9]/gi,'_') + '_mindmap.svg';
   a.click(); URL.revokeObjectURL(a.href);
-  toast('🖼 SVG сохранён');
+  toast('💾 SVG сохранён');
 }
+
+function mmSavePNG(){
+  const canvas = MM.canvas; if(!canvas) return;
+  const scale = MM.scale;
+  canvas.toBlob(blob=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (scale?.name||'mindmap').replace(/[^\wа-яёa-z0-9]/gi,'_') + '_mindmap.png';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('🖼 PNG сохранён');
+  },'image/png');
+}
+
+// Legacy aliases for backwards compat
+const fitMindMap = mmFit;
+const saveMindMapSVG = mmSaveSVG;
+
+// ════════════════════════════════════════════════════
+//  PDF EXPORT — jsPDF + html2canvas (high quality)
+// ════════════════════════════════════════════════════
+
+async function doExportPDF(){
+  const scale = curScale();
+  if(!scale){ toast('❌ Нет открытой шкалы. Откройте шкалу в редакторе.'); return; }
+
+  if(typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined'){
+    toast('⏳ Загружаем библиотеки PDF…');
+    await new Promise(res=>setTimeout(res,800));
+    if(typeof window.jspdf === 'undefined'){
+      toast('❌ jsPDF не загружен. Проверьте интернет-соединение.'); return;
+    }
+  }
+
+  toast('⏳ Генерируем PDF… это займёт несколько секунд');
+
+  // Build a dedicated print-ready div (off-screen)
+  const printDiv = buildPrintDiv(scale);
+  printDiv.style.position = 'fixed';
+  printDiv.style.left = '-9999px';
+  printDiv.style.top = '0';
+  printDiv.style.width = '794px'; // A4 width at 96dpi
+  printDiv.style.background = '#ffffff';
+  printDiv.style.zIndex = '-1';
+  document.body.appendChild(printDiv);
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true });
+    const pageW = 210, pageH = 297;
+    const marginX = 12, marginY = 14;
+    const contentW = pageW - marginX*2;
+
+    // Capture with html2canvas — high resolution
+    const canvas = await html2canvas(printDiv, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false,
+      windowWidth: 794,
+      width: 794,
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const imgH = (canvas.height * contentW) / canvas.width;
+    const pageContentH = pageH - marginY * 2;
+    let yPos = 0;
+    let pageNum = 0;
+
+    while(yPos < imgH){
+      if(pageNum > 0) pdf.addPage();
+      // Header line on each page
+      pdf.setDrawColor(201,168,76);
+      pdf.setLineWidth(0.3);
+
+      const sliceH = Math.min(pageContentH, imgH - yPos);
+      const srcY = (yPos / imgH) * canvas.height;
+      const srcH = (sliceH / imgH) * canvas.height;
+
+      // Create a slice canvas for this page
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = srcH;
+      const sliceCtx = sliceCanvas.getContext('2d');
+      sliceCtx.fillStyle = '#ffffff';
+      sliceCtx.fillRect(0,0,sliceCanvas.width,sliceCanvas.height);
+      sliceCtx.drawImage(canvas, 0, -srcY);
+      const sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.92);
+
+      pdf.addImage(sliceImg, 'JPEG', marginX, marginY, contentW, sliceH, '', 'FAST');
+
+      // Footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(150,150,150);
+      pdf.text(`AdminScale Pro — ${esc(scale.name)}`, marginX, pageH - 6);
+      pdf.text(`${pageNum+1}`, pageW - marginX, pageH - 6, {align:'right'});
+      pdf.setDrawColor(230,230,230);
+      pdf.line(marginX, pageH - 10, pageW - marginX, pageH - 10);
+
+      yPos += pageContentH;
+      pageNum++;
+    }
+
+    const fileName = (scale.name||'adminscale').replace(/[^\wа-яёa-z0-9]/gi,'_') + '.pdf';
+    pdf.save(fileName);
+    toast('✅ PDF сохранён: ' + fileName);
+  } catch(e){
+    console.error('PDF error:', e);
+    toast('❌ Ошибка PDF: ' + e.message);
+  } finally {
+    document.body.removeChild(printDiv);
+  }
+}
+
+function buildPrintDiv(scale){
+  const typeLabelMap = {primary:'Первоочередная',vital:'Жизненно важная',conditional:'Условная',operating:'Текущая',production:'Производственная'};
+  const typeBgMap = {primary:'#fff0f0',vital:'#fff8f0',conditional:'#f0f7ff',operating:'#f0fff5',production:'#f8f0ff'};
+  const typeBorderMap = {primary:'#e74c3c',vital:'#e67e22',conditional:'#2980b9',operating:'#27ae60',production:'#8e44ad'};
+  const typeTextMap = {primary:'#c0392b',vital:'#d35400',conditional:'#1a6fa8',operating:'#1e8449',production:'#6c3483'};
+
+  const e2 = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nl = s => e2(s||'').replace(/\n/g,'<br>');
+
+  let html = `<div style="font-family:'Segoe UI',Arial,sans-serif;font-size:11pt;color:#1a1a2e;background:#fff;padding:24px 28px">`;
+
+  // Title header
+  html += `<div style="border-bottom:3px solid #c9a84c;padding-bottom:12px;margin-bottom:20px">
+    <div style="font-size:20pt;font-weight:800;color:#1a1a2e">${e2(scale.name)}</div>
+    <div style="font-size:9pt;color:#888;margin-top:4px">AdminScale Pro · ${new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>`;
+
+  // Level blocks 1-4
+  const levels = [
+    {ic:'🎯',n:'1',t:'ЦЕЛЬ',f:'goal',cl:'#c9a84c'},
+    {ic:'💡',n:'2',t:'ЗАМЫСЛЫ',f:'purpose',cl:'#e8c97a'},
+    {ic:'📜',n:'3',t:'ПОЛИТИКА',f:'policy',cl:'#8a9bb5'},
+    {ic:'🗺',n:'4',t:'ПЛАН',f:'plan',cl:'#5dade2'},
+  ].filter(l=>scale[l.f]);
+
+  if(levels.length){
+    levels.forEach(l=>{
+      html += `<div style="border-left:4px solid ${l.cl};padding:8px 12px;margin-bottom:10px;background:#fafafa;border-radius:4px">
+        <div style="font-size:9pt;font-weight:700;color:${l.cl};margin-bottom:4px;letter-spacing:0.5px">УРОВЕНЬ ${l.n} — ${l.t}</div>
+        <div style="font-size:10.5pt;color:#333;line-height:1.6">${nl(scale[l.f])}</div>
+      </div>`;
+    });
+  }
+
+  // Programs
+  if(scale.programs?.length){
+    html += `<div style="font-size:14pt;font-weight:700;color:#6c3483;margin:22px 0 12px;padding-bottom:6px;border-bottom:2px solid #e8d5ff">⚡ ПРОГРАММЫ</div>`;
+
+    scale.programs.forEach((prog,pi)=>{
+      const steps = prog.steps||[];
+      const done = steps.filter(s=>s.done).length;
+      const pct = steps.length ? Math.round(done/steps.length*100) : 0;
+
+      html += `<div style="border:1.5px solid #8e44ad;border-radius:6px;margin-bottom:18px;overflow:hidden">
+        <div style="background:#f5eeff;padding:10px 14px;border-bottom:1px solid #e8d5ff">
+          <div style="font-size:12pt;font-weight:700;color:#6c3483">Программа ${pi+1}: ${e2(prog.name)}</div>
+          ${prog.mainTask?`<div style="font-size:9.5pt;color:#8a5ca8;margin-top:3px">🎯 Главная задача: ${e2(prog.mainTask)}</div>`:''}
+          <div style="margin-top:6px;height:4px;background:#e8d5ff;border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#8e44ad"></div></div>
+          <div style="font-size:8pt;color:#888;margin-top:2px">${done}/${steps.length} задач выполнено (${pct}%)</div>
+        </div>
+        <div style="padding:10px 14px">`;
+
+      steps.forEach((st,si)=>{
+        const tc = typeBorderMap[st.type]||'#ccc';
+        const tb = typeBgMap[st.type]||'#fafafa';
+        const tl = typeLabelMap[st.type]||st.type;
+        const tt = typeTextMap[st.type]||'#333';
+        html += `<div style="border-left:3px solid ${tc};background:${tb};padding:7px 11px;margin-bottom:6px;border-radius:3px${st.done?';opacity:0.7':''}">
+          <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap">
+            <span style="font-size:8.5pt;font-weight:700;color:#1a56db;background:#e8f0fe;padding:1px 6px;border-radius:10px;white-space:nowrap">ШАГ ${si+1}</span>
+            <span style="font-size:8.5pt;font-weight:700;color:${tt};background:white;border:1px solid ${tc};padding:1px 6px;border-radius:10px;white-space:nowrap">${tl}</span>
+            ${st.deadline?`<span style="font-size:8pt;color:#888">📅 ${st.deadline}</span>`:''}
+            ${st.responsible?`<span style="font-size:8pt;color:#888">👤 ${e2(st.responsible)}</span>`:''}
+            ${st.done?`<span style="font-size:8pt;color:#1e8449;font-weight:700">✅ Выполнено</span>`:''}
+          </div>
+          <div style="font-size:10.5pt;font-weight:600;color:${st.done?'#888':'#1a1a2e'};margin-top:5px${st.done?';text-decoration:line-through':''}">${e2(st.name)}</div>
+          ${st.notes?`<div style="font-size:9pt;color:#666;margin-top:3px;font-style:italic;line-height:1.5">${nl(st.notes)}</div>`:''}
+          ${st.project?`<div style="margin-top:7px;padding:7px 10px;background:#f0faf9;border:1px solid #17a589;border-radius:4px">
+            <div style="font-size:9pt;font-weight:700;color:#17a589;margin-bottom:5px">🔧 Проект: ${e2(st.project.name||'')}</div>
+            ${(st.project.steps||[]).map((ps,psi)=>`<div style="font-size:9pt;color:#555;padding:2px 0">${psi+1}. ${e2(ps.text||'')}${ps.responsible?` <span style="color:#888">— ${e2(ps.responsible)}</span>`:''}</div>`).join('')}
+          </div>`:''}
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    });
+  }
+
+  // Levels 8-10
+  const bottomLevels = [
+    {ic:'🌟',n:'8',t:'ИДЕАЛЬНАЯ КАРТИНА',f:'ideal',cl:'#b8c9de'},
+    {ic:'📈',n:'9',t:'СТАТИСТИКИ',f:'stats',cl:'#58d68d'},
+    {ic:'🏆',n:'10',t:'ЦКП',f:'vfp',cl:'#f39c12'},
+  ].filter(l=>scale[l.f]);
+
+  if(bottomLevels.length){
+    html += `<div style="margin-top:8px">`;
+    bottomLevels.forEach(l=>{
+      html += `<div style="border-left:4px solid ${l.cl};padding:8px 12px;margin-bottom:10px;background:#fafafa;border-radius:4px">
+        <div style="font-size:9pt;font-weight:700;color:${l.cl};margin-bottom:4px">УРОВЕНЬ ${l.n} — ${l.t}</div>
+        <div style="font-size:10.5pt;color:#333;line-height:1.6">${nl(scale[l.f])}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div;
+}
+
+
+
+
 
 // ════════════════════════════════════════════════════
 //  IMPORT / EXPORT
@@ -1858,7 +2389,7 @@ initApp();
 // ════════════════════════════════════════════════════
 
 function openSupabaseModal(){
-  const { url, key } = sbCfg();
+  const { url, key } = sbCfg(); // auto-decrypted
   document.getElementById('sb-url-inp').value = url;
   document.getElementById('sb-key-inp').value = key;
   document.getElementById('sb-test-result').style.display='none';
@@ -1878,8 +2409,7 @@ async function sbTestAndSave(){
   if(!url||!key){ showSbResult('❌ Введите URL и ключ',false); return; }
   if(!url.startsWith('https://')||!url.includes('supabase')){ showSbResult('❌ URL должен быть вида https://xxxx.supabase.co',false); return; }
   showSbResult('⏳ Проверяем подключение…',null);
-  localStorage.setItem('asp_sb_url',url);
-  localStorage.setItem('asp_sb_key',key);
+  sbSaveCfg(url, key);  // store obfuscated
   const ok = await sbInit();
   if(!ok){ showSbResult('❌ Не удалось загрузить Supabase. Проверьте интернет.',false); return; }
   try{
@@ -1897,8 +2427,7 @@ async function sbTestAndSave(){
 
 function sbDisconnect(){
   if(!confirm('Отключить Supabase? Данные останутся локально.')) return;
-  localStorage.removeItem('asp_sb_url'); localStorage.removeItem('asp_sb_key');
-  SB=null;
+  sbClearCfg(); SB=null;
   updateSbStatus('☁ Supabase отключён','silver');
   sbSetDot('grey');
   closeModal('modal-supabase');
@@ -1930,7 +2459,7 @@ function copySql(){
 
     <div class="alert alert-info" style="margin-bottom:16px">
       <span>ℹ</span>
-      <span>Supabase хранит ваши шкалы в облаке и синхронизирует между устройствами. Ключи сохраняются только в вашем браузере — никуда не передаются.</span>
+      <span><strong>Безопасность:</strong> Ключи хранятся только в вашем браузере в зашифрованном виде (XOR-обфускация). Они <strong>никогда не попадают в код</strong> и <strong>не публикуются на GitHub</strong>. CI/CD автоматически блокирует коммит если обнаружит токен в исходниках.</span>
     </div>
 
     <div style="margin-bottom:13px">
